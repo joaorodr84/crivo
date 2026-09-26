@@ -24,8 +24,6 @@ Each lands as its own branch and commit.
 - **[P2] WINNOWER-13 — Resumable sessions (FR8).** Persist keywords, candidates
   and picks so a long run can be paused; `--resume`, and refuse to overwrite an
   unfinished session by accident.
-- **[P1] WINNOWER-14 — Docs.** README (setup, own-API-key statement, compliance
-  note, licence caveat), CONTRIBUTING, `examples/keywords_sample.txt`.
 
 ## Later
 

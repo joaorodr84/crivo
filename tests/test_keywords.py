@@ -1,4 +1,5 @@
 import io
+from pathlib import Path
 
 import pytest
 
@@ -153,3 +154,10 @@ class TestReadKeywords:
         path.write_text("apple\n", encoding="utf-8")
         with pytest.raises(KeywordError, match="--column"):
             read_keywords(path, column="word")
+
+
+def test_the_sample_list_in_the_readme_parses():
+    sample = Path(__file__).parent.parent / "examples" / "keywords_sample.txt"
+    found = read_keywords(sample)
+    assert len(found) == 12 and not found.duplicates
+    assert Keyword("hot-dog", "hot dog") in found.keywords

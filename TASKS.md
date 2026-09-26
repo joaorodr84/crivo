@@ -49,7 +49,6 @@ registry, not a second copy of the backlog.
 | ID | Pri | Status | Title |
 | --- | --- | --- | --- |
 | WINNOWER-13 | P2 | open | Resumable sessions (FR8) |
-| WINNOWER-14 | P1 | open | README, CONTRIBUTING and a sample keyword list |
 | WINNOWER-15 | P3 | open | Type or paste keywords into a text box in the UI (rest of FR1) |
 | WINNOWER-16 | P3 | open | Screenshots of the selection UI for the README |
 | WINNOWER-17 | P2 | open | Run against the live Pixabay API on Windows, macOS and Linux |
@@ -71,3 +70,4 @@ registry, not a second copy of the backlog.
 | WINNOWER-10 | 2026-09-27 | done | Package the results with CREDITS.txt into a zip (FR7) | — |
 | WINNOWER-11 | 2026-09-27 | done | Selection UI: thumbnail grid, attribution, skip and retry (FR4) | — |
 | WINNOWER-12 | 2026-09-27 | done | CLI that runs the whole pipeline end to end | — |
+| WINNOWER-14 | 2026-09-27 | done | README, CONTRIBUTING and a sample keyword list | — |
