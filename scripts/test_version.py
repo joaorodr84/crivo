@@ -28,7 +28,10 @@ def test_largest_bump_wins():
 
 
 def test_bookkeeping_alone_releases_nothing():
-    assert bump("docs: A", "chore: B", "refactor: C", "test: D", "ci: E", "build: F", "style: G") == "none"
+    assert (
+        bump("docs: A", "chore: B", "refactor: C", "test: D", "ci: E", "build: F", "style: G")
+        == "none"
+    )
 
 
 def test_breaking_via_bang_or_footer_either_counts():
@@ -57,7 +60,13 @@ def test_parse_commit_reads_scope_and_bang():
 
 @pytest.mark.parametrize(
     ("tag", "expected"),
-    [("v1.2.3", (1, 2, 3)), ("0.4.0", (0, 4, 0)), (" v10.0.1\n", (10, 0, 1)), ("v1.2", None), ("release-1", None)],
+    [
+        ("v1.2.3", (1, 2, 3)),
+        ("0.4.0", (0, 4, 0)),
+        (" v10.0.1\n", (10, 0, 1)),
+        ("v1.2", None),
+        ("release-1", None),
+    ],
 )
 def test_parse_version(tag, expected):
     assert parse_version(tag) == expected

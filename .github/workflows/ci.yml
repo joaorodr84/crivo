@@ -1,0 +1,91 @@
+# Runs the checks that previously only ran when someone remembered to ask.
+#
+# Work lands on main by fast-forward rather than through pull requests, so `push` is
+# the trigger that actually fires. `pull_request` is kept so the workflow still works
+# if that ever changes.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A newer push to the same ref makes the older run pointless.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests — ${{ matrix.os }}, Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      # Portability across Windows, macOS and Linux is a stated requirement, so all
+      # three run on every push. 3.10 is the floor `pyproject.toml` promises and
+      # 3.13 the newest that is widely installed; the versions between them have
+      # never broken anything this project does, so they are not each paid for.
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ['3.10', '3.13']
+
+    steps:
+      # Full history: setuptools-scm derives the version from tags, and the tooling
+      # tests build their own repositories but the install reads this one.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install
+        run: python -m pip install -e ".[dev]"
+
+      # Once is enough: formatting does not differ by platform.
+      - name: Lint
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.13'
+        run: python -m ruff check .
+
+      - name: Format
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.13'
+        run: python -m ruff format --check .
+
+      # Both suites: the package (tests/) and the repo tooling (scripts/). No test
+      # needs a Pixabay key or the network.
+      - name: Tests
+        run: python -m pytest
+
+  commits:
+    name: Commit messages
+    runs-on: ubuntu-latest
+
+    steps:
+      # The linter needs the commits themselves, not just the tree.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      # The commit-msg hook already checks these locally. This catches what the hook
+      # cannot: --no-verify, and a clone that never ran
+      # `git config core.hooksPath .githooks`.
+      - name: Lint the pushed commits
+        run: |
+          BEFORE='${{ github.event.before }}'
+          if [ "${{ github.event_name }}" = 'pull_request' ]; then
+            python -m scripts.commit_lint \
+              --range '${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}'
+          elif [ -z "$BEFORE" ] || [ "$BEFORE" = '0000000000000000000000000000000000000000' ]; then
+            # A new branch, or the first push: there is no "before" to diff against,
+            # so check the tip and no more.
+            python -m scripts.commit_lint --last
+          else
+            python -m scripts.commit_lint --range "$BEFORE..${{ github.sha }}"
+          fi

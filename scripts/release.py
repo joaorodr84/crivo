@@ -86,7 +86,9 @@ def _fail(message: str) -> int:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Propose or create the next release tag.")
     parser.add_argument("--write", action="store_true", help="create the annotated tag")
-    parser.add_argument("--patch", action="store_true", help="tag a checkpoint if nothing ships behaviour")
+    parser.add_argument(
+        "--patch", action="store_true", help="tag a checkpoint if nothing ships behaviour"
+    )
     args = parser.parse_args(argv)
 
     tag = last_release_tag()
@@ -134,7 +136,9 @@ def main(argv: list[str] | None = None) -> int:
     if git("rev-parse", "--abbrev-ref", "HEAD") != "main":
         return _fail("Refusing to tag: releases are cut from main, and HEAD is on another branch.")
     if git("status", "--porcelain"):
-        return _fail("Refusing to tag: the working tree is dirty, so the tag would not name what you see.")
+        return _fail(
+            "Refusing to tag: the working tree is dirty, so the tag would not name what you see."
+        )
     if git("tag", "--list", proposed):
         return _fail(f"Refusing to tag: {proposed} already exists.")
 

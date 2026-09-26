@@ -21,10 +21,6 @@ that closes it; the priority changes, the ID never does.
 The original requirements (FR1–FR8) split one task per module, in pipeline order.
 Each lands as its own branch and commit.
 
-- **[P1] WINNOWER-4 — Scaffold the package.** `pyproject.toml` (src layout,
-  setuptools-scm, ruff, pytest), `winnower.config` reading `PIXABAY_API_KEY` from
-  the environment or a gitignored `.env`, `.env.example`, and the CI workflow
-  (lint, tests on three OSes, commit-message check).
 - **[P1] WINNOWER-5 — Keyword input (FR1).** `.txt` one per line, `.csv` column,
   or stdin; `label | search term` overrides; a global term template.
 - **[P1] WINNOWER-6 — Pixabay client (FR2, non-functional).** Sliding-window

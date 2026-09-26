@@ -51,18 +51,14 @@ TYPES = (
 )
 HEADER_MAX_LENGTH = 100
 
-HEADER = re.compile(
-    r"^(?P<type>[^\s(!:]+)(?:\((?P<scope>[^)]*)\))?(?P<bang>!)?: (?P<subject>.*)$"
-)
+HEADER = re.compile(r"^(?P<type>[^\s(!:]+)(?:\((?P<scope>[^)]*)\))?(?P<bang>!)?: (?P<subject>.*)$")
 TASK_ID_LAST = re.compile(r" \(WINNOWER-\d+(, WINNOWER-\d+)*\)$")
 BREAKING_FOOTER = re.compile(r"^BREAKING[ -]CHANGE: \S", re.MULTILINE)
 
 # Trailer tokens recognised when checking that the footer block is separated from
 # the body. A general `Token: value` pattern would misread prose such as
 # "Note: ..." inside a body paragraph, so the list is closed.
-FOOTER_LINE = re.compile(
-    r"^(BREAKING[ -]CHANGE|Co-Authored-By|Signed-off-by|Refs|Closes|Fixes): "
-)
+FOOTER_LINE = re.compile(r"^(BREAKING[ -]CHANGE|Co-Authored-By|Signed-off-by|Refs|Closes|Fixes): ")
 
 # Messages git or a tool writes itself; commitlint ignores the same set.
 IGNORED_PREFIXES = ("Merge ", 'Revert "', "fixup! ", "squash! ", "amend! ")
@@ -184,7 +180,9 @@ def _git_log(*args: str) -> list[str]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--edit", metavar="FILE", help="lint the message in FILE (the commit-msg hook)")
+    group.add_argument(
+        "--edit", metavar="FILE", help="lint the message in FILE (the commit-msg hook)"
+    )
     group.add_argument("--last", action="store_true", help="lint the tip commit")
     group.add_argument("--range", metavar="A..B", help="lint every commit in the range")
     args = parser.parse_args(argv)

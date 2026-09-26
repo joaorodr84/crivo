@@ -196,7 +196,7 @@ Two suites, both `pytest`, run from the repo root:
 CI runs all of it on Linux, Windows and macOS, because portability is a requirement, not a hope.
 
 **Tests never touch the network and never need an API key.** The client takes an injectable session,
-clock and sleep; the fakes live in `tests/fakes.py`. An integration test that hit the real API would
+clock and sleep; the fakes live in `tests/fakes.py` (arrives with WINNOWER-6). An integration test that hit the real API would
 fail for every contributor without a key and burn the maintainer's rate limit — the live check is
 WINNOWER-17, run by hand.
 

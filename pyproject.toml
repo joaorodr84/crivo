@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=77", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "winnower"
+# The version is the git tag (CLAUDE.md -> Versions), read by setuptools-scm, so
+# there is no number here to fall out of step with `python -m scripts.release`.
+dynamic = ["version"]
+description = "Search Pixabay for a list of keywords, pick one image for each, and get them back resized in a zip."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.31",
+    "Pillow>=10.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools_scm]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "scripts"]
+# `src` so the package imports without an install; `.` so `scripts` and `tests`
+# import as packages when pytest is run from the repo root.
+pythonpath = ["src", "."]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

@@ -1,5 +1,6 @@
 """The commit-message rules, one case per rule, plus the CLI paths CI and the hook use."""
 
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -116,14 +117,14 @@ def test_range_mode_checks_commits_not_the_tree(tmp_path, monkeypatch, capsys):
     assert commit_lint.main(["--last"]) == 1
 
 
+@pytest.mark.skipif(shutil.which("sh") is None, reason="no POSIX sh on PATH")
 def test_hook_script_runs_the_linter(tmp_path):
     """The shell script, not just the module: this is what a commit actually invokes."""
     message = tmp_path / "msg"
     message.write_text("not conventional\n", encoding="utf-8")
     hook = Path(__file__).resolve().parent.parent / ".githooks" / "commit-msg"
-    sh = "sh"
     result = subprocess.run(
-        [sh, str(hook), str(message)],
+        ["sh", str(hook), str(message)],
         cwd=hook.parent.parent,
         capture_output=True,
         text=True,
