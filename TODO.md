@@ -21,8 +21,6 @@ that closes it; the priority changes, the ID never does.
 The original requirements (FR1–FR8) split one task per module, in pipeline order.
 Each lands as its own branch and commit.
 
-- **[P1] WINNOWER-12 — CLI.** `winnower run KEYWORDS` wiring search → select →
-  download → resize → package, with every option from FR2 and FR6.
 - **[P2] WINNOWER-13 — Resumable sessions (FR8).** Persist keywords, candidates
   and picks so a long run can be paused; `--resume`, and refuse to overwrite an
   unfinished session by accident.

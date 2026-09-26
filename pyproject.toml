@@ -17,6 +17,9 @@ dependencies = [
     "Pillow>=10.3",
 ]
 
+[project.scripts]
+winnower = "winnower.cli:cli"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8",

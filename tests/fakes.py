@@ -84,6 +84,21 @@ class FakeSession:
         return item
 
 
+class RoutingSession:
+    """Answers by URL, for tests where one session serves both the API and the image CDN.
+
+    `handler(url, kwargs)` returns a response (or raises). Every call is recorded.
+    """
+
+    def __init__(self, handler: Any):
+        self.handler = handler
+        self.calls: list[dict[str, Any]] = []
+
+    def get(self, url: str, **kwargs: Any) -> Any:
+        self.calls.append({"url": url, **kwargs})
+        return self.handler(url, kwargs)
+
+
 def hit(n: int = 1, **overrides: Any) -> dict[str, Any]:
     """A search hit shaped like Pixabay's, with every field the client reads."""
     base = {
