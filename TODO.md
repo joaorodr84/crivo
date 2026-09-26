@@ -21,8 +21,6 @@ that closes it; the priority changes, the ID never does.
 The original requirements (FR1–FR8) split one task per module, in pipeline order.
 Each lands as its own branch and commit.
 
-- **[P1] WINNOWER-5 — Keyword input (FR1).** `.txt` one per line, `.csv` column,
-  or stdin; `label | search term` overrides; a global term template.
 - **[P1] WINNOWER-6 — Pixabay client (FR2, non-functional).** Sliding-window
   throttle at 100/60s that also reads `X-RateLimit-*`, exponential backoff on
   429 and network errors, 24h response cache keyed by the query *without* the
