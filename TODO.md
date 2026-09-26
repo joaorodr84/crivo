@@ -21,9 +21,6 @@ that closes it; the priority changes, the ID never does.
 The original requirements (FR1–FR8) split one task per module, in pipeline order.
 Each lands as its own branch and commit.
 
-- **[P1] WINNOWER-3 — Derive release versions.** `scripts/version.py` (pure) and
-  `scripts/release.py` (dry run by default, `--write` tags), ported from
-  Watchr's `scripts/release.mjs`.
 - **[P1] WINNOWER-4 — Scaffold the package.** `pyproject.toml` (src layout,
   setuptools-scm, ruff, pytest), `winnower.config` reading `PIXABAY_API_KEY` from
   the environment or a gitignored `.env`, `.env.example`, and the CI workflow

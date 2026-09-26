@@ -48,7 +48,6 @@ registry, not a second copy of the backlog.
 
 | ID | Pri | Status | Title |
 | --- | --- | --- | --- |
-| WINNOWER-3 | P1 | open | Derive release versions from commit types |
 | WINNOWER-4 | P1 | open | Scaffold the package: pyproject, config loading, lint, CI |
 | WINNOWER-5 | P1 | open | Read keywords from a file, CSV or stdin, with per-keyword search terms (FR1) |
 | WINNOWER-6 | P1 | open | Pixabay client with throttle, backoff and a 24h cache (FR2, non-functional) |
@@ -70,3 +69,4 @@ registry, not a second copy of the backlog.
 | --- | --- | --- | --- | --- |
 | WINNOWER-1 | 2026-09-26 | done | Set up the repo workflow: CLAUDE.md, agents, ledger, changelog | — |
 | WINNOWER-2 | 2026-09-26 | done | Lint commit messages with a commit-msg hook | — |
+| WINNOWER-3 | 2026-09-26 | done | Derive release versions from commit types | — |
