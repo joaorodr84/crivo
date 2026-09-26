@@ -21,8 +21,6 @@ that closes it; the priority changes, the ID never does.
 The original requirements (FR1–FR8) split one task per module, in pipeline order.
 Each lands as its own branch and commit.
 
-- **[P1] WINNOWER-10 — Packager (FR7).** Filesystem-safe unique names,
-  `CREDITS.txt`, one zip.
 - **[P1] WINNOWER-11 — Selection UI (FR4).** Stdlib `http.server` and vanilla
   JS: thumbnails with contributor and Pixabay link, pick one or more, skip,
   retry (next page, or a new term), running count, finish.
