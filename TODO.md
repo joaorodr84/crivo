@@ -21,9 +21,6 @@ that closes it; the priority changes, the ID never does.
 The original requirements (FR1–FR8) split one task per module, in pipeline order.
 Each lands as its own branch and commit.
 
-- **[P1] WINNOWER-8 — Downloader (FR5).** Fetch `largeImageURL` (or `imageURL`
-  with full API access) to a cache of originals; atomic writes; skip what is
-  already cached.
 - **[P1] WINNOWER-9 — Resizer (FR6).** Pillow: crop, pad or fit to the target
   size; PNG default, JPEG and WebP optional; alpha flattened for JPEG; EXIF
   orientation respected.

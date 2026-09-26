@@ -7,6 +7,7 @@ CLAUDE.md -> Tests: the client takes an injectable session, clock and sleep so t
 from __future__ import annotations
 
 import io
+from collections.abc import Iterator
 from typing import Any
 
 import requests
@@ -39,17 +40,30 @@ class FakeResponse:
         headers: dict[str, str] | None = None,
         text: str = "",
         content: bytes = b"",
+        drop_after: int | None = None,
     ):
         self.status_code = status
         self._json = json_body
         self.headers = headers or {}
         self.text = text
         self.content = content
+        self.drop_after = drop_after  # bytes delivered before the connection "resets"
+        self.closed = False
 
     def json(self) -> Any:
         if self._json is None:
             raise requests.exceptions.JSONDecodeError("Expecting value", "", 0)
         return self._json
+
+    def iter_content(self, chunk_size: int = 1) -> Iterator[bytes]:
+        data = self.content if self.drop_after is None else self.content[: self.drop_after]
+        for start in range(0, len(data), chunk_size):
+            yield data[start : start + chunk_size]
+        if self.drop_after is not None and self.drop_after < len(self.content):
+            raise requests.exceptions.ChunkedEncodingError("connection reset")
+
+    def close(self) -> None:
+        self.closed = True
 
 
 class FakeSession:
