@@ -48,7 +48,6 @@ registry, not a second copy of the backlog.
 
 | ID | Pri | Status | Title |
 | --- | --- | --- | --- |
-| WINNOWER-11 | P1 | open | Selection UI: thumbnail grid, attribution, skip and retry (FR4) |
 | WINNOWER-12 | P1 | open | CLI that runs the whole pipeline end to end |
 | WINNOWER-13 | P2 | open | Resumable sessions (FR8) |
 | WINNOWER-14 | P1 | open | README, CONTRIBUTING and a sample keyword list |
@@ -71,3 +70,4 @@ registry, not a second copy of the backlog.
 | WINNOWER-8 | 2026-09-27 | done | Download selections into a cache of originals (FR5) | — |
 | WINNOWER-9 | 2026-09-27 | done | Resize to a common size: crop, pad or fit (FR6) | — |
 | WINNOWER-10 | 2026-09-27 | done | Package the results with CREDITS.txt into a zip (FR7) | — |
+| WINNOWER-11 | 2026-09-27 | done | Selection UI: thumbnail grid, attribution, skip and retry (FR4) | — |

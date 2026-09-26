@@ -26,6 +26,11 @@ dev = [
 [tool.setuptools.packages.find]
 where = ["src"]
 
+# The selection page (HTML, CSS, JS) is served from these; without this line an installed
+# wheel would have the server but not the page.
+[tool.setuptools.package-data]
+winnower = ["static/*"]
+
 [tool.setuptools_scm]
 
 [tool.pytest.ini_options]
