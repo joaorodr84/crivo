@@ -21,8 +21,6 @@ that closes it; the priority changes, the ID never does.
 The original requirements (FR1–FR8) split one task per module, in pipeline order.
 Each lands as its own branch and commit.
 
-- **[P1] WINNOWER-7 — Search runner (FR3).** Loop the keywords, report
-  "n / total", flag zero-result and failed keywords without stopping the run.
 - **[P1] WINNOWER-8 — Downloader (FR5).** Fetch `largeImageURL` (or `imageURL`
   with full API access) to a cache of originals; atomic writes; skip what is
   already cached.
