@@ -1,0 +1,26 @@
+# Secrets. Each user brings their own Pixabay key (README -> Setup); the repo
+# ships .env.example and nothing else. See CLAUDE.md -> Pixabay rules.
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+
+# Winnower's own working data: cached search responses, downloaded originals
+# and the resumable session. Pixabay images must never be committed
+# (CLAUDE.md -> Pixabay rules), so this is ignored wholesale rather than by
+# file type.
+.winnower/
+winnower-output/
+*.zip
+
+# Claude Code: per-machine state, not project configuration.
+.claude/settings.local.json
+.claude/scheduled_tasks.lock

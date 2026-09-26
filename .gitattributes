@@ -1,0 +1,16 @@
+# Line endings are settled here rather than per-machine, so a checkout on
+# Windows, macOS and Linux produces byte-identical files. Without this, a
+# Windows clone with core.autocrlf=true rewrites every file to CRLF and Git
+# then announces it on every command, and the .githooks/commit-msg shell script
+# would not even run there (`sh` rejects a CRLF shebang line).
+* text=auto eol=lf
+
+# Never normalize and never diff as text. Winnower handles images all day, and
+# a test fixture or README screenshot corrupted by line-ending conversion is a
+# confusing way to lose an afternoon.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.zip  binary
