@@ -21,10 +21,6 @@ that closes it; the priority changes, the ID never does.
 The original requirements (FR1–FR8) split one task per module, in pipeline order.
 Each lands as its own branch and commit.
 
-- **[P1] WINNOWER-2 — Lint commit messages.** `.githooks/commit-msg` plus
-  `scripts/commit_lint.py`, a dependency-free port of the rules Watchr enforces
-  with commitlint: type list, capitalised subject, `(WINNOWER-<n>)` last,
-  `!` and `BREAKING CHANGE:` together. Also checks a commit range, for CI.
 - **[P1] WINNOWER-3 — Derive release versions.** `scripts/version.py` (pure) and
   `scripts/release.py` (dry run by default, `--write` tags), ported from
   Watchr's `scripts/release.mjs`.

@@ -1,0 +1,15 @@
+#!/bin/sh
+# Lints the commit message against CLAUDE.md -> Commit messages.
+# Enabled per clone with:  git config core.hooksPath .githooks
+#
+# Tries the interpreters in the order a contributor is likeliest to have a working
+# one. `python3` is tried first on Linux/macOS, but on Windows it can be the
+# Microsoft Store stub, which exists on PATH and fails when run; running
+# `-c pass` first tells a real interpreter from the stub.
+for py in python3 python py; do
+  if "$py" -c pass >/dev/null 2>&1; then
+    exec "$py" -m scripts.commit_lint --edit "$1"
+  fi
+done
+echo "commit-msg hook: no working Python found on PATH (tried python3, python, py)." >&2
+exit 1
