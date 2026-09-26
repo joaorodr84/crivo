@@ -21,9 +21,6 @@ that closes it; the priority changes, the ID never does.
 The original requirements (FR1–FR8) split one task per module, in pipeline order.
 Each lands as its own branch and commit.
 
-- **[P1] WINNOWER-9 — Resizer (FR6).** Pillow: crop, pad or fit to the target
-  size; PNG default, JPEG and WebP optional; alpha flattened for JPEG; EXIF
-  orientation respected.
 - **[P1] WINNOWER-10 — Packager (FR7).** Filesystem-safe unique names,
   `CREDITS.txt`, one zip.
 - **[P1] WINNOWER-11 — Selection UI (FR4).** Stdlib `http.server` and vanilla

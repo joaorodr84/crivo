@@ -48,7 +48,6 @@ registry, not a second copy of the backlog.
 
 | ID | Pri | Status | Title |
 | --- | --- | --- | --- |
-| WINNOWER-9 | P1 | open | Resize to a common size: crop, pad or fit (FR6) |
 | WINNOWER-10 | P1 | open | Package the results with CREDITS.txt into a zip (FR7) |
 | WINNOWER-11 | P1 | open | Selection UI: thumbnail grid, attribution, skip and retry (FR4) |
 | WINNOWER-12 | P1 | open | CLI that runs the whole pipeline end to end |
@@ -71,3 +70,4 @@ registry, not a second copy of the backlog.
 | WINNOWER-6 | 2026-09-27 | done | Pixabay client with throttle, backoff and a 24h cache (FR2, non-functional) | — |
 | WINNOWER-7 | 2026-09-27 | done | Search runner: progress, zero-result flagging (FR3) | — |
 | WINNOWER-8 | 2026-09-27 | done | Download selections into a cache of originals (FR5) | — |
+| WINNOWER-9 | 2026-09-27 | done | Resize to a common size: crop, pad or fit (FR6) | — |
