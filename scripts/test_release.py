@@ -27,6 +27,15 @@ def commit(cwd: Path, subject: str, body: str = "") -> None:
 def repo(tmp_path, monkeypatch):
     git(tmp_path, "init", "-q", "-b", "main")
     monkeypatch.chdir(tmp_path)
+    # `git()` above passes the identity with -c, which covers only *this file's* git
+    # calls. `release --write` runs its own `git tag -a`, and an annotated tag needs a
+    # committer identity: on a Linux or Windows runner with none configured it died
+    # with exit 128 -- 4 of the 6 jobs in the first CI run (macOS runners ship one, so
+    # they passed). Environment variables reach that subprocess; the script itself is
+    # left alone, since a contributor with no identity should get git's own message.
+    for who in ("AUTHOR", "COMMITTER"):
+        monkeypatch.setenv(f"GIT_{who}_NAME", "T")
+        monkeypatch.setenv(f"GIT_{who}_EMAIL", "t@example.com")
     return tmp_path
 
 

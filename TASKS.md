@@ -3,7 +3,7 @@
 Every task carries an ID of the form `WINNOWER-<n>`. IDs are assigned once, never
 reused, and never renumbered.
 
-**Next ID to assign: `WINNOWER-18`**
+**Next ID to assign: `WINNOWER-19`**
 
 If this file and history ever disagree, history wins:
 
@@ -70,3 +70,4 @@ registry, not a second copy of the backlog.
 | WINNOWER-2 | 2026-09-26 | done | Lint commit messages with a commit-msg hook | — |
 | WINNOWER-3 | 2026-09-26 | done | Derive release versions from commit types | — |
 | WINNOWER-4 | 2026-09-26 | done | Scaffold the package: pyproject, config loading, lint, CI | — |
+| WINNOWER-18 | 2026-09-27 | done | Give the release tests a git identity so they pass on CI runners | — |
