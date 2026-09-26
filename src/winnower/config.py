@@ -49,9 +49,11 @@ LANGUAGES = (
 RESIZE_MODES = ("crop", "pad", "fit")
 OUTPUT_FORMATS = ("png", "jpeg", "webp")
 
-# Pixabay allows 3-200 results per page. A search fetches exactly one page, so this
-# is also the ceiling on candidates per keyword. The spec suggests 1-10 in the UI;
-# the higher ceiling costs nothing and stays inside the API's own 500-result cap.
+# Pixabay allows 3-200 results per page, and a search fetches exactly one page, so these
+# are also the floor and ceiling on candidates per keyword. The spec's "1-10" is not
+# reachable: `per_page=1` is refused by the API, and asking for 3 and showing 1 would
+# make "next page" skip two results. The ceiling stays inside the 500-result cap.
+MIN_CANDIDATES = 3
 MAX_CANDIDATES = 200
 # A guard against `--size 999999x999999` allocating gigabytes in Pillow.
 MAX_SIDE = 8192
@@ -116,8 +118,11 @@ class Settings:
     output: Path = Path("winnower.zip")
 
     def __post_init__(self) -> None:
-        if not 1 <= self.candidates <= MAX_CANDIDATES:
-            raise ConfigError(f"candidates must be between 1 and {MAX_CANDIDATES}")
+        if not MIN_CANDIDATES <= self.candidates <= MAX_CANDIDATES:
+            raise ConfigError(
+                f"candidates must be between {MIN_CANDIDATES} and {MAX_CANDIDATES} "
+                "(the page sizes Pixabay accepts)"
+            )
         if "{term}" not in self.term_template:
             raise ConfigError("term_template must contain {term}, e.g. '{term} icon'")
         width, height = self.size

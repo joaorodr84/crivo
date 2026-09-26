@@ -48,7 +48,6 @@ registry, not a second copy of the backlog.
 
 | ID | Pri | Status | Title |
 | --- | --- | --- | --- |
-| WINNOWER-6 | P1 | open | Pixabay client with throttle, backoff and a 24h cache (FR2, non-functional) |
 | WINNOWER-7 | P1 | open | Search runner: progress, zero-result flagging (FR3) |
 | WINNOWER-8 | P1 | open | Download selections into a cache of originals (FR5) |
 | WINNOWER-9 | P1 | open | Resize to a common size: crop, pad or fit (FR6) |
@@ -71,3 +70,4 @@ registry, not a second copy of the backlog.
 | WINNOWER-4 | 2026-09-26 | done | Scaffold the package: pyproject, config loading, lint, CI | — |
 | WINNOWER-18 | 2026-09-27 | done | Give the release tests a git identity so they pass on CI runners | — |
 | WINNOWER-5 | 2026-09-27 | done | Read keywords from a file, CSV or stdin, with per-keyword search terms (FR1) | — |
+| WINNOWER-6 | 2026-09-27 | done | Pixabay client with throttle, backoff and a 24h cache (FR2, non-functional) | — |

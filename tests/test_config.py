@@ -102,6 +102,7 @@ class TestValidation:
         ("kwargs", "fragment"),
         [
             ({"candidates": 0}, "candidates"),
+            ({"candidates": 2}, "candidates"),
             ({"candidates": 201}, "candidates"),
             ({"term_template": "icon"}, "{term}"),
             ({"size": (0, 10)}, "size"),
@@ -132,7 +133,7 @@ class TestValidation:
             SearchOptions(**kwargs)
 
     def test_accepts_the_boundaries(self):
-        Settings(candidates=1, size=(1, 1), background="#FFaa00")
+        Settings(candidates=3, size=(1, 1), background="#FFaa00")
         Settings(candidates=200, size=(8192, 8192))
 
     def test_search_term_template(self):

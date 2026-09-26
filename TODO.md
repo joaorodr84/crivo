@@ -21,11 +21,6 @@ that closes it; the priority changes, the ID never does.
 The original requirements (FR1–FR8) split one task per module, in pipeline order.
 Each lands as its own branch and commit.
 
-- **[P1] WINNOWER-6 — Pixabay client (FR2, non-functional).** Sliding-window
-  throttle at 100/60s that also reads `X-RateLimit-*`, exponential backoff on
-  429 and network errors, 24h response cache keyed by the query *without* the
-  API key, every filter the API exposes. Replaces the library the spec named;
-  see the header of the module for why.
 - **[P1] WINNOWER-7 — Search runner (FR3).** Loop the keywords, report
   "n / total", flag zero-result and failed keywords without stopping the run.
 - **[P1] WINNOWER-8 — Downloader (FR5).** Fetch `largeImageURL` (or `imageURL`
