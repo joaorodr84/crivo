@@ -32,9 +32,19 @@ button:disabled { opacity: .5; cursor: default; }
 button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-main, .banner, .finished, .attribution { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+main, .banner, .finished, .attribution, .start { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
 .banner { margin-top: 12px; padding: 10px 16px; border: 1px solid var(--warn);
   border-radius: 6px; color: var(--warn); background: var(--surface); }
+.start { margin-top: 24px; }
+.start h2 { margin: 0 0 6px; font-size: 20px; }
+.start textarea { width: 100%; font: 14px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  padding: 10px; color: var(--text); background: var(--surface); border: 1px solid var(--line);
+  border-radius: 8px; resize: vertical; }
+.start-actions { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+code { font: 13px ui-monospace, "SF Mono", Menlo, Consolas, monospace; background: var(--bg);
+  padding: 1px 4px; border-radius: 4px; }
+
 /* not `.done`: that is the class a completed keyword section carries */
 .finished { margin-top: 48px; text-align: center; }
 .attribution { color: var(--muted); font-size: 13px; padding: 24px 16px 40px; }

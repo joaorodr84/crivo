@@ -2,6 +2,7 @@
 
 import io
 import json
+import threading
 import zipfile
 
 import pytest
@@ -12,6 +13,7 @@ from PIL import Image
 from winnower import __version__
 from winnower.cli import EXIT_ERROR, EXIT_INTERRUPTED, EXIT_OK, EXIT_PARTIAL, main
 from winnower.pixabay_client import API_URL
+from winnower.selection import SelectionError
 
 KEY = "SECRET-KEY-123"
 PNG = png_bytes((80, 40), (200, 30, 30))
@@ -227,9 +229,14 @@ class TestFailuresBeforeAnythingIsSpent:
         assert run(str(run.tmp / "nope.txt")) == EXIT_ERROR
         assert "not found" in run.err.getvalue()
 
-    def test_no_keywords_at_all(self, run):
-        assert run() == EXIT_ERROR
-        assert "Give a keyword file" in run.err.getvalue()
+    def test_no_keywords_at_all_means_the_page_asks_for_them(self, run):
+        assert run(serve_fn=lambda session, **kw: None) == EXIT_ERROR  # the person gave none
+        assert "the page will ask for them" in run.out.getvalue()
+        assert run.network.calls == []
+
+    def test_a_column_option_without_a_file_is_a_mistake_not_a_page(self, run):
+        assert run("--column", "word") == EXIT_ERROR
+        assert "need a .csv file" in run.err.getvalue()
 
     def test_a_file_and_dash_k_together(self, run):
         assert run(run.keywords("apple\n"), "-k", "pear") == EXIT_ERROR
@@ -518,3 +525,236 @@ class TestSessionEdges:
         assert run("--resume") == EXIT_ERROR
         assert "cannot be used" in run.err.getvalue() and "--restart" in run.err.getvalue()
         assert run(path, "--restart", serve_fn=picker("apple")) == EXIT_OK
+
+
+def pastes(text, *labels, count=1):
+    """A person who pastes `text` into the page, waits for the search, then picks and finishes."""
+
+    def serve_fn(session, *, open_browser, announce):
+        assert session.phase == "start"
+        session.start(text)
+        assert session.wait_searched(10), "the background search did not finish"
+        for keyword in session.snapshot()["keywords"]:
+            if keyword["label"] in labels:
+                for candidate in keyword["candidates"][:count]:
+                    session.pick(keyword["label"], candidate["id"])
+        session.finish()
+
+    return serve_fn
+
+
+class TestKeywordsFromThePage:
+    def test_pasted_keywords_go_through_the_whole_pipeline(self, run):
+        code = run(serve_fn=pastes("apple\npear | pear photo\n", "apple", "pear"))
+        assert code == EXIT_OK
+        assert [c["params"]["q"] for c in run.network.api_calls] == ["apple", "pear photo"]
+        assert run.names() == ["apple.png", "pear.png", "CREDITS.txt"]
+
+    def test_the_search_runs_behind_the_page_with_progress(self, run):
+        seen = []
+
+        def serve_fn(session, *, open_browser, announce):
+            seen.append(session.snapshot())
+            session.start("apple\npear\n")
+            seen.append(session.snapshot())
+            assert session.wait_searched(10)
+            seen.append(session.snapshot())
+            for keyword in session.snapshot()["keywords"]:
+                session.pick(keyword["label"], keyword["candidates"][0]["id"])
+            session.finish()
+
+        assert run(serve_fn=serve_fn) == EXIT_OK
+        before, during, after = seen
+        assert before["phase"] == "start" and before["total"] == 0
+        assert during["phase"] in ("searching", "picking") and during["total"] == 2
+        assert after["phase"] == "picking" and after["searching"] is None
+        assert "  2 / 2  pear" in run.out.getvalue()
+
+    def test_every_keyword_is_on_the_page_at_once_as_not_searched(self, run):
+        network = Network()
+        release, reached = threading.Event(), threading.Event()
+        inner = network._route
+
+        def gated(url, kwargs):
+            if url == API_URL and kwargs["params"]["q"] == "pear":
+                reached.set()
+                assert release.wait(10)
+            return inner(url, kwargs)
+
+        network.handler = gated
+        states = []
+
+        def serve_fn(session, *, open_browser, announce):
+            session.start("apple\npear\nplum\n")
+            assert reached.wait(10)  # apple is done, pear is in flight, plum has not started
+            states.append(session.snapshot())
+            release.set()
+            assert session.wait_searched(10)
+            for keyword in session.snapshot()["keywords"]:
+                session.pick(keyword["label"], keyword["candidates"][0]["id"])
+            session.finish()
+
+        assert run(network=network, serve_fn=serve_fn) == EXIT_OK
+        mid = states[0]
+        assert mid["phase"] == "searching" and mid["searching"] == {"done": 1, "total": 3}
+        assert [k["status"] for k in mid["keywords"]] == ["found", "pending", "pending"]
+        assert run.names() == ["apple.png", "pear.png", "plum.png", "CREDITS.txt"]
+
+    def test_an_unusable_paste_is_refused_with_a_reason_and_the_box_stays_open(self, run):
+        outcome = {}
+
+        def serve_fn(session, *, open_browser, announce):
+            for bad in ("", "# just a comment\n", "  | orphan\n"):
+                try:
+                    session.start(bad)
+                except SelectionError as err:
+                    outcome[bad] = str(err)
+            outcome["phase"] = session.phase
+            session.start("apple\n")
+            assert session.wait_searched(10)
+            session.pick("apple", session.snapshot()["keywords"][0]["candidates"][0]["id"])
+            session.finish()
+
+        assert run(serve_fn=serve_fn) == EXIT_OK
+        assert (
+            "no keywords found" in outcome[""]
+            and "no keywords found" in outcome["# just a comment\n"]
+        )
+        assert "nothing before" in outcome["  | orphan\n"]
+        assert outcome["phase"] == "start"
+
+    def test_the_box_can_only_be_used_once(self, run):
+        def serve_fn(session, *, open_browser, announce):
+            session.start("apple\n")
+            try:
+                session.start("pear\n")
+            except SelectionError as err:
+                assert "already been given" in str(err)
+            else:
+                raise AssertionError("a second paste was accepted")
+            assert session.wait_searched(10)
+            session.pick("apple", session.snapshot()["keywords"][0]["candidates"][0]["id"])
+            session.finish()
+
+        assert run(serve_fn=serve_fn) == EXIT_OK
+        assert [c["params"]["q"] for c in run.network.api_calls] == ["apple"]
+
+    def test_a_repeated_keyword_is_noted_on_the_page(self, run):
+        notes = []
+
+        def serve_fn(session, *, open_browser, announce):
+            session.start("apple\nApple\npear\n")
+            assert session.wait_searched(10)
+            notes.extend(session.snapshot()["notes"])
+            for keyword in session.snapshot()["keywords"]:
+                session.pick(keyword["label"], keyword["candidates"][0]["id"])
+            session.finish()
+
+        run(serve_fn=serve_fn)
+        assert notes and "repeated keyword" in notes[0]
+
+    def test_finishing_is_refused_while_the_search_is_still_running(self, run):
+        network = Network()
+        release, reached = threading.Event(), threading.Event()
+        inner = network._route
+
+        def gated(url, kwargs):
+            if url == API_URL and kwargs["params"]["q"] == "pear":
+                reached.set()
+                assert release.wait(10)
+            return inner(url, kwargs)
+
+        network.handler = gated
+        refused = []
+
+        def serve_fn(session, *, open_browser, announce):
+            session.start("apple\npear\n")
+            assert reached.wait(10)
+            session.pick("apple", session.snapshot()["keywords"][0]["candidates"][0]["id"])
+            try:
+                session.finish()
+            except SelectionError as err:
+                refused.append(str(err))
+            try:
+                session.retry("pear", term="pear photo")  # still waiting for its turn
+            except SelectionError as err:
+                refused.append(str(err))
+            release.set()
+            assert session.wait_searched(10)
+            session.finish()
+
+        assert run(network=network, serve_fn=serve_fn) == EXIT_OK
+        assert "still running" in refused[0] and "already being searched" in refused[1]
+
+    def test_a_rate_limit_during_the_background_search_pauses_it_and_says_so(self, run):
+        network = Network({"pear": FakeResponse(429)})
+        seen = []
+
+        def serve_fn(session, *, open_browser, announce):
+            session.start("apple\npear\nplum\n")
+            assert session.wait_searched(10)
+            seen.append(session.snapshot())
+            session.pick("apple", session.snapshot()["keywords"][0]["candidates"][0]["id"])
+            session.finish()
+
+        assert run(network=network, serve_fn=serve_fn) == EXIT_OK
+        snap = seen[0]
+        assert [k["status"] for k in snap["keywords"]] == ["found", "failed", "pending"]
+        assert "rate limit" in snap["stopped"]
+
+    def test_closing_the_terminal_mid_search_keeps_what_was_found_and_resumes(self, run):
+        network = Network()
+        release, reached = threading.Event(), threading.Event()
+        inner = network._route
+
+        def gated(url, kwargs):
+            if url == API_URL and kwargs["params"]["q"] == "pear":
+                reached.set()
+                assert release.wait(10)
+            return inner(url, kwargs)
+
+        network.handler = gated
+
+        def close_the_terminal(session, *, open_browser, announce):
+            session.start("apple\npear\nplum\n")
+            assert reached.wait(10)
+            raise KeyboardInterrupt
+
+        try:
+            assert run(network=network, serve_fn=close_the_terminal) == EXIT_INTERRUPTED
+            assert "picks are saved" in run.err.getvalue()
+            seen = []
+
+            def resumed(session, *, open_browser, announce):
+                snap = session.snapshot()
+                seen.append(snap)
+                for label in ("pear", "plum"):
+                    session.retry(label)  # the not-yet-searched ones have a Search button
+                for keyword in session.snapshot()["keywords"]:
+                    session.pick(keyword["label"], keyword["candidates"][0]["id"])
+                session.finish()
+
+            assert run("--resume", serve_fn=resumed) == EXIT_OK
+        finally:
+            release.set()  # let the abandoned search thread end
+        snap = seen[0]
+        assert snap["phase"] == "picking"
+        assert [k["status"] for k in snap["keywords"]] == ["found", "pending", "pending"]
+        assert "search was interrupted" in snap["stopped"]
+        assert run.names() == ["apple.png", "pear.png", "plum.png", "CREDITS.txt"]
+
+    def test_a_crash_in_the_background_search_is_reported_on_the_page_not_left_hanging(self, run):
+        class Boom(Network):
+            def _route(self, url, kwargs):
+                raise RuntimeError("a bug")
+
+        seen = []
+
+        def serve_fn(session, *, open_browser, announce):
+            session.start("apple\n")
+            assert session.wait_searched(10), "the page would wait forever"
+            seen.append(session.snapshot())
+            raise KeyboardInterrupt
+
+        run(network=Boom(), serve_fn=serve_fn)
+        assert "stopped unexpectedly" in seen[0]["stopped"] and seen[0]["phase"] == "picking"

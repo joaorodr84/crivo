@@ -22,6 +22,13 @@ Rules a person would otherwise trip over:
   saved (`session_store.py`) after each click. Saving *everything* each time, rather than
   appending what changed, is what keeps a crash between two clicks from leaving a file that
   is half of one state and half of another; a hundred keywords is a few hundred kilobytes.
+- A session can begin with no keywords at all (`starter`): the page shows a box to paste
+  them into, `start()` hands the text to the starter, and the starter fills the session
+  with every keyword as *not searched* and searches them in the background. The page reads
+  the progress from `snapshot()` as they come in. Putting every keyword in at once, rather
+  than adding each as it is searched, is what makes an interrupted search resumable for
+  free: the saved session already lists them all, and the ones not yet reached are just
+  keywords with a Search button, which already exists.
 - The search runs *outside* the lock. It can wait a minute on the rate limit, and the
   page must still be able to read the state and pick in other keywords meanwhile.
 """
@@ -95,6 +102,7 @@ class SelectionSession:
         multiple: bool = False,
         stopped: str | None = None,
         on_change: Callable[[dict[str, Any]], None] | None = None,
+        starter: Callable[[str], None] | None = None,
     ):
         self._search = search
         self.on_change = on_change
@@ -105,6 +113,14 @@ class SelectionSession:
         self._entries: dict[str, _Entry] = {}
         for outcome in outcomes:
             self._entries[outcome.keyword.label] = self._entry_from(outcome)
+        self._starter = starter
+        self._awaiting = starter is not None and not outcomes  # waiting for the box
+        self._starting = False
+        self._progress: tuple[int, int] | None = None  # (searched, total) while searching
+        self._searched = threading.Event()
+        if not self._awaiting:
+            self._searched.set()
+        self._notes: list[str] = []
 
     @staticmethod
     def _entry_from(outcome: Outcome) -> _Entry:
@@ -118,6 +134,61 @@ class SelectionSession:
             has_more=result.has_more if result else False,
             error=outcome.error,
         )
+
+    @property
+    def phase(self) -> str:
+        """`start` (waiting for keywords), `searching`, or `picking`."""
+        with self._lock:
+            if self._awaiting:
+                return "start"
+            return "searching" if self._progress is not None else "picking"
+
+    def start(self, text: str) -> None:
+        """The person pasted their keywords. Raises SelectionError if they cannot be used."""
+        with self._lock:
+            if self._starter is None or not self._awaiting or self._starting:
+                raise SelectionError("The keywords have already been given.")
+            self._starting = True
+            starter = self._starter
+        try:
+            starter(text)
+        except ValueError as err:  # KeywordError is one: the message is written for the person
+            raise SelectionError(str(err)) from None
+        finally:
+            with self._lock:
+                self._starting = False
+
+    def populate(self, outcomes: list[Outcome], notes: list[str] | None = None) -> None:
+        """Fill an empty session with keywords (normally all `not searched`) and begin searching."""
+        with self._lock:
+            for outcome in outcomes:
+                self._entries[outcome.keyword.label] = self._entry_from(outcome)
+            self._notes = list(notes or [])
+            self._awaiting = False
+            self._progress = (0, len(outcomes))
+            self._changed()
+
+    def update(self, outcome: Outcome) -> None:
+        """A background search produced `outcome` for one keyword."""
+        with self._lock:
+            self._entries[outcome.keyword.label] = self._entry_from(outcome)
+            self._changed()
+
+    def set_progress(self, done: int, total: int) -> None:
+        with self._lock:
+            self._progress = (done, total)
+
+    def finish_search(self, stopped: str | None = None) -> None:
+        """The background search is over, whether it got through the list or was stopped."""
+        with self._lock:
+            self._progress = None
+            if stopped:
+                self._stopped = stopped
+            self._changed()
+        self._searched.set()
+
+    def wait_searched(self, timeout: float | None = None) -> bool:
+        return self._searched.wait(timeout)
 
     def _entry(self, label: str) -> _Entry:
         try:
@@ -156,7 +227,7 @@ class SelectionSession:
             raise SelectionError("Searching again is not available in this session.")
         with self._lock:
             entry = self._entry(label)
-            if entry.busy:
+            if entry.busy or (self._progress is not None and entry.status is Status.PENDING):
                 raise SelectionError(f"{label!r} is already being searched.")
             query = term.strip() if term is not None else entry.query
             if not query:
@@ -209,6 +280,8 @@ class SelectionSession:
             return {
                 "multiple": self._multiple,
                 "stopped": self._stopped,
+                "notes": list(self._notes),
+                "searching": self._progress is not None,
                 "finished": self._finished.is_set(),
                 "entries": [
                     {
@@ -237,8 +310,14 @@ class SelectionSession:
     ) -> SelectionSession:
         """Rebuild a session from `export()`. Raises SelectionError if it is not one."""
         try:
-            session = cls([], search, multiple=multiple or bool(state["multiple"]),
-                          stopped=state["stopped"])  # fmt: skip
+            stopped = state["stopped"]
+            if state.get("searching") and not stopped:
+                stopped = (
+                    "The search was interrupted. Keywords marked not searched can be "
+                    "searched from this page."
+                )
+            session = cls([], search, multiple=multiple or bool(state["multiple"]), stopped=stopped)
+            session._notes = [str(n) for n in state.get("notes", [])]
             for item in state["entries"]:
                 candidates = [Candidate.from_dict(c) for c in item["candidates"]]
                 picked = [int(i) for i in item["picked"]]
@@ -273,6 +352,19 @@ class SelectionSession:
                 "multiple": self._multiple,
                 "finished": self._finished.is_set(),
                 "stopped": self._stopped,
+                "notes": list(self._notes),
+                "phase": (
+                    "start"
+                    if self._awaiting
+                    else "searching"
+                    if self._progress is not None
+                    else "picking"
+                ),
+                "searching": (
+                    {"done": self._progress[0], "total": self._progress[1]}
+                    if self._progress is not None
+                    else None
+                ),
                 "keywords": [
                     {
                         "label": e.keyword.label,
@@ -296,7 +388,7 @@ class SelectionSession:
         with self._lock:
             if not any(e.picked for e in self._entries.values()):
                 raise SelectionError("Pick at least one image before finishing.")
-            if any(e.busy for e in self._entries.values()):
+            if self._progress is not None or any(e.busy for e in self._entries.values()):
                 raise SelectionError("A search is still running; wait for it to finish.")
             self._finished.set()
             self._changed()

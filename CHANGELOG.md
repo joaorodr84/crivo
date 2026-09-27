@@ -96,6 +96,14 @@ Open work is tracked in [TODO.md](TODO.md), and registered by ID in
 - If the session file cannot be saved (a full disk, a read-only folder), this is
   reported once at the end and the run carries on, since the picks are still
   held in memory.
+- `winnower run` with no keywords at all opens the page with a box to type or
+  paste them into, in the same format as a `.txt` file (`label | search term`,
+  `#` comments). The search then runs behind the page: it shows how far it has
+  got, each keyword appears as soon as it is searched, and you can start
+  choosing before the rest are done. A list that cannot be used is refused with
+  the reason next to the box, and you can try again. If you close the terminal
+  mid-search, `winnower run --resume` brings back everything found so far, with
+  the keywords not yet reached marked as not searched.
 
 ### Changed
 

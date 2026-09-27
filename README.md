@@ -79,6 +79,11 @@ Every image shows its contributor's name and a link to its Pixabay page. When yo
 | A `.csv` file with a header row | `winnower run words.csv --column word` |
 | Standard input | `cat keywords.txt \| winnower run -` |
 | Directly on the command line | `winnower run -k apple -k "hot-dog \| hot dog"` |
+| Typed or pasted into a box on the page | `winnower run` (no keywords at all) |
+
+With no keywords given, the page opens with a box to paste your list into. The search then runs
+behind the page, which shows how far it has got and fills in each keyword as it is searched, so
+you can start choosing before it is finished. The box takes the same format as a `.txt` file.
 
 Blank lines and lines starting with `#` are ignored. To name the file after one thing and
 search for another, write `label | search term`:

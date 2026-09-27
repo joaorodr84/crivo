@@ -42,7 +42,8 @@ from urllib.parse import parse_qs, urlsplit
 from .selection import SelectionError, SelectionSession
 
 TOKEN_HEADER = "X-Winnower-Token"
-MAX_BODY = 16 * 1024
+# Room for a pasted list of a few thousand keywords; everything else is a few dozen bytes.
+MAX_BODY = 256 * 1024
 DRAIN_LIMIT = 1024 * 1024  # how much of an oversized body is read and discarded
 STATIC = {
     "/static/selector.css": ("selector.css", "text/css; charset=utf-8"),
@@ -180,6 +181,7 @@ class SelectorServer(ThreadingHTTPServer):
             "/api/pick": self._pick,
             "/api/skip": self._skip,
             "/api/retry": self._retry,
+            "/api/start": self._start,
             "/api/finish": lambda body: session.finish(),
         }
         self._thread: threading.Thread | None = None
@@ -193,6 +195,9 @@ class SelectorServer(ThreadingHTTPServer):
 
     def _skip(self, body: dict[str, Any]) -> None:
         self.session.skip(str(body["label"]), bool(body.get("skipped", True)))
+
+    def _start(self, body: dict[str, Any]) -> None:
+        self.session.start(str(body["text"]))
 
     def _retry(self, body: dict[str, Any]) -> None:
         term = body.get("term")

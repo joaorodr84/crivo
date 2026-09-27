@@ -388,3 +388,137 @@ class TestOnChange:
         s, seen = self.watched(found("a", [1, 2, 3]), search=search)
         s.retry("a", next_page=True)
         assert seen[-1]["entries"][0]["notice"] == "Rate limited."
+
+
+class TestStartingFromABox:
+    def empty(self, starter):
+        return SelectionSession([], None, starter=starter)
+
+    def test_it_begins_in_the_start_phase_with_nothing_on_it(self):
+        s = self.empty(lambda text: None)
+        snap = s.snapshot()
+        assert (snap["phase"], snap["total"], snap["keywords"], snap["searching"]) == (
+            "start", 0, [], None,
+        )  # fmt: skip
+        assert not s.wait_searched(0)
+
+    def test_a_session_with_keywords_never_shows_the_box(self):
+        assert session(found("a", [1, 2, 3])).phase == "picking"
+        assert SelectionSession([], None).phase == "picking"  # no starter: nothing to wait for
+
+    def test_keywords_that_are_already_there_mean_no_box(self):
+        s = SelectionSession([found("a", [1, 2, 3])], None, starter=lambda text: None)
+        assert s.phase == "picking"
+        with pytest.raises(SelectionError, match="already been given"):
+            s.start("more")
+
+    def test_start_hands_the_text_to_the_starter(self):
+        got = []
+        s = self.empty(got.append)
+        s.start("apple\npear")
+        assert got == ["apple\npear"]
+
+    def test_a_starter_that_rejects_the_text_leaves_the_box_open_with_the_reason(self):
+        def starter(text):
+            raise ValueError("no keywords found in the box")
+
+        s = self.empty(starter)
+        with pytest.raises(SelectionError, match="no keywords found"):
+            s.start("")
+        assert s.phase == "start"
+        s._starter = lambda text: s.populate([pending("a")])  # and it can be tried again
+        s.start("a")
+        assert s.phase == "searching"
+
+    def test_populate_puts_every_keyword_in_at_once_as_searching(self):
+        s = self.empty(lambda text: None)
+        s.populate([pending("a"), pending("b")], notes=["Ignored 1 repeated keyword(s)."])
+        snap = s.snapshot()
+        assert snap["phase"] == "searching" and snap["searching"] == {"done": 0, "total": 2}
+        assert [k["status"] for k in snap["keywords"]] == ["pending", "pending"]
+        assert snap["notes"] == ["Ignored 1 repeated keyword(s)."]
+
+    def test_update_fills_one_keyword_in_and_progress_follows(self):
+        s = self.empty(lambda text: None)
+        s.populate([pending("a"), pending("b")])
+        s.update(found("a", [1, 2, 3]))
+        s.set_progress(1, 2)
+        snap = s.snapshot()
+        assert [k["status"] for k in snap["keywords"]] == ["found", "pending"]
+        assert snap["searching"] == {"done": 1, "total": 2}
+
+    def test_finishing_the_search_ends_the_phase_and_records_why_it_stopped(self):
+        s = self.empty(lambda text: None)
+        s.populate([pending("a")])
+        s.finish_search("rate limited")
+        snap = s.snapshot()
+        assert snap["phase"] == "picking" and snap["searching"] is None
+        assert snap["stopped"] == "rate limited" and s.wait_searched(0)
+
+    def test_changes_are_reported_so_a_half_finished_search_is_saved(self):
+        seen = []
+        s = self.empty(lambda text: None)
+        s.on_change = seen.append
+        s.populate([pending("a"), pending("b")])
+        s.update(found("a", [1, 2, 3]))
+        s.finish_search()
+        assert len(seen) == 3 and seen[0]["searching"] is True and seen[2]["searching"] is False
+
+    def test_a_pending_keyword_cannot_be_searched_by_hand_while_the_search_runs(self):
+        s = self.empty(lambda text: None)
+        s._search = lambda k, q, p: found("a", [1, 2, 3])
+        s.populate([pending("a")])
+        with pytest.raises(SelectionError, match="already being searched"):
+            s.retry("a")
+        s.finish_search()
+        s.retry("a")  # once the background search is over, it can be
+
+    def test_finishing_is_refused_mid_search(self):
+        s = self.empty(lambda text: None)
+        s.populate([found("a", [1, 2, 3]), pending("b")])
+        s.pick("a", 1)
+        with pytest.raises(SelectionError, match="still running"):
+            s.finish()
+
+    def test_a_search_interrupted_before_it_finished_says_so_when_restored(self):
+        s = self.empty(lambda text: None)
+        s.populate([pending("a"), pending("b")])
+        s.update(found("a", [1, 2, 3]))
+        restored = SelectionSession.from_state(json.loads(json.dumps(s.export())))
+        snap = restored.snapshot()
+        assert snap["phase"] == "picking" and snap["searching"] is None
+        assert "interrupted" in snap["stopped"]
+        assert [k["status"] for k in snap["keywords"]] == ["found", "pending"]
+
+    def test_a_search_that_finished_says_nothing_of_the_kind_when_restored(self):
+        s = self.empty(lambda text: None)
+        s.populate([pending("a")])
+        s.update(found("a", [1, 2, 3]))
+        s.finish_search()
+        assert SelectionSession.from_state(s.export()).snapshot()["stopped"] is None
+
+    def test_notes_survive_a_restore(self):
+        s = self.empty(lambda text: None)
+        s.populate([pending("a")], notes=["Ignored 2 repeated keyword(s)."])
+        assert SelectionSession.from_state(s.export()).snapshot()["notes"] == [
+            "Ignored 2 repeated keyword(s)."
+        ]
+
+    def test_two_pastes_at_once_start_only_one_search(self):
+        entered, release = threading.Event(), threading.Event()
+        calls = []
+
+        def slow_starter(text):
+            calls.append(text)
+            entered.set()
+            assert release.wait(5)
+
+        s = self.empty(slow_starter)
+        worker = threading.Thread(target=lambda: s.start("first"))
+        worker.start()
+        assert entered.wait(5)
+        with pytest.raises(SelectionError, match="already been given"):
+            s.start("second")
+        release.set()
+        worker.join(5)
+        assert calls == ["first"]

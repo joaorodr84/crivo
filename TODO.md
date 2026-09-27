@@ -24,10 +24,6 @@ Each lands as its own branch and commit.
 
 ## Later
 
-- **[P3] WINNOWER-15 — Text-box keyword entry.** FR1 also asks for a pasted or
-  typed list in a text box. The CLI accepts stdin and `-k`, which covers the
-  paste case, but a UI start page that takes the list needs the search to move
-  behind the server so the page can be open while it runs.
 - **[P3] WINNOWER-20 — Tidy the tags under each thumbnail.** Found in the live
   run: real Pixabay tags repeat and run long ("apple, apple, apple, apple, red,
   fruit, ..." to twenty words), which makes the cards uneven and noisy. Show each

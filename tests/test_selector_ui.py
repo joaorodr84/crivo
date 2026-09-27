@@ -360,6 +360,79 @@ class TestApi:
         assert errors == [] and app.session.snapshot()["picks"] == 8
 
 
+class TestStartPage:
+    def empty(self, live, starter=None):
+        """A server whose session is waiting for keywords; `starter` stands in for the CLI's."""
+        app = live()
+        app.session = SelectionSession([], None, starter=starter or (lambda text: None))
+        app.server.session = app.session
+        return app
+
+    def test_the_start_phase_is_visible_to_the_page(self, live):
+        _, data = self.empty(live).json("GET", "/api/state")
+        assert data["phase"] == "start" and data["keywords"] == [] and data["picks"] == 0
+
+    def test_the_box_is_on_the_page_and_its_text_needs_no_html(self):
+        page = resources.files("winnower").joinpath("static", "selector.html").read_text("utf-8")
+        assert 'id="start-text"' in page and 'id="start-button"' in page
+
+    def test_posting_the_text_starts_the_search(self, live):
+        got = []
+
+        def starter(text):
+            got.append(text)
+            app.session.populate([Outcome(Keyword("apple", "apple"), Status.PENDING, "apple")])
+
+        app = self.empty(live, starter)
+        status, data = app.json("POST", "/api/start", {"text": "apple\n"})
+        assert status == 200 and got == ["apple\n"]
+        assert data["phase"] == "searching" and data["total"] == 1
+
+    def test_unusable_text_comes_back_as_a_409_with_the_reason(self, live):
+        def starter(text):
+            raise ValueError("no keywords found in the box")
+
+        app = self.empty(live, starter)
+        status, data = app.json("POST", "/api/start", {"text": "# nothing"})
+        assert status == 409 and "no keywords found" in data["error"]
+        assert app.session.phase == "start"
+
+    def test_a_second_start_is_refused(self, live):
+        app = self.empty(live, lambda text: app.session.populate([pending_outcome("a")]))
+        assert app.json("POST", "/api/start", {"text": "a"})[0] == 200
+        status, data = app.json("POST", "/api/start", {"text": "b"})
+        assert status == 409 and "already been given" in data["error"]
+
+    def test_a_missing_or_mistyped_text_field_is_400(self, live):
+        app = self.empty(live)
+        assert app.json("POST", "/api/start", {})[0] == 400
+
+    def test_starting_needs_the_token_like_everything_else(self, live):
+        app = self.empty(live)
+        assert app.call("POST", "/api/start", {"text": "a"}, token=False)[0] == 403
+        assert app.session.phase == "start"
+
+    def test_a_long_paste_is_accepted(self, live):
+        got = []
+        app = self.empty(live, got.append)
+        text = "\n".join(f"keyword number {i}" for i in range(3000))  # about 60 KB
+        assert app.json("POST", "/api/start", {"text": text})[0] == 200
+        assert got == [text]
+
+    def test_polling_shows_progress_as_the_search_advances(self, live):
+        app = self.empty(live, lambda text: None)
+        app.session.populate([pending_outcome("a"), pending_outcome("b")])
+        app.session.update(found("a", [1, 2, 3]))
+        app.session.set_progress(1, 2)
+        _, data = app.json("GET", "/api/state")
+        assert data["phase"] == "searching" and data["searching"] == {"done": 1, "total": 2}
+        assert [k["status"] for k in data["keywords"]] == ["found", "pending"]
+
+
+def pending_outcome(label):
+    return Outcome(Keyword(label, label), Status.PENDING, label)
+
+
 class TestServe:
     def test_serve_blocks_until_finish_then_shuts_the_server_down(self):
         session = SelectionSession([found("apple", [1, 2, 3])])

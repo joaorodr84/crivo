@@ -48,7 +48,6 @@ registry, not a second copy of the backlog.
 
 | ID | Pri | Status | Title |
 | --- | --- | --- | --- |
-| WINNOWER-15 | P3 | open | Type or paste keywords into a text box in the UI (rest of FR1) |
 | WINNOWER-16 | P3 | open | Screenshots of the selection UI for the README |
 | WINNOWER-17 | P2 | in progress | Run against the live Pixabay API on Windows, macOS and Linux (Windows done) |
 | WINNOWER-20 | P3 | open | Tidy the tags under each thumbnail: show each once, cap the list |
@@ -74,3 +73,4 @@ registry, not a second copy of the backlog.
 | WINNOWER-13 | 2026-09-27 | done | Resumable sessions (FR8) | — |
 | WINNOWER-19 | 2026-09-27 | done | Fix crop failing on real photos: float rounding made the source box offset negative | — |
 | WINNOWER-21 | 2026-09-27 | done | Fix a rejected POST losing its response: read the body before answering | — |
+| WINNOWER-15 | 2026-09-27 | done | Type or paste keywords into a text box in the UI (rest of FR1) | — |

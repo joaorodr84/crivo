@@ -18,6 +18,19 @@
   </header>
 
   <div id="banner" class="banner" role="status" hidden></div>
+  <section id="start" class="start" hidden>
+    <h2>Which images do you need?</h2>
+    <p>One keyword per line. Write <code>label | search term</code> to name the file after one
+    thing and search for another, for example <code>hot-dog | hot dog</code>. Blank lines and
+    lines starting with <code>#</code> are ignored.</p>
+    <label for="start-text" class="sr-only">Keywords</label>
+    <textarea id="start-text" rows="12" spellcheck="false" autocomplete="off"
+      placeholder="apple&#10;hot-dog | hot dog&#10;mountain lake"></textarea>
+    <div class="start-actions">
+      <button id="start-button" class="primary" type="button">Search Pixabay</button>
+      <span id="start-error" class="msg error" role="alert"></span>
+    </div>
+  </section>
   <main id="list"></main>
   <div id="done" class="finished" hidden>
     <h2>Finished</h2>

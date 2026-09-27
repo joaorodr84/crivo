@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+import threading
 import time
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
@@ -50,7 +51,7 @@ from .config import (
     parse_size,
 )
 from .downloader import Downloader
-from .keywords import KeywordError, KeywordList, parse_lines, read_keywords
+from .keywords import KeywordError, KeywordList, parse_lines, parse_text, read_keywords
 from .packager import Entry, PackageError, write_zip
 from .pixabay_client import PixabayClient, SearchCache, Throttle
 from .resizer import extension, render
@@ -101,7 +102,8 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="?",
         metavar="KEYWORDS",
         help="a .txt file (one keyword per line, 'label | search term' to override), a .csv "
-        "file (with a header row), or - for stdin",
+        "file (with a header row), or - for stdin. Leave it out, and -k, to paste the keywords "
+        "into the page instead",
     )
     src.add_argument(
         "-k", "--keyword", action="append", default=[], metavar="TEXT",
@@ -210,13 +212,16 @@ def _settings_from(args: argparse.Namespace, env: Mapping[str, str], dotenv: Pat
     return load_settings(overrides, env=env, dotenv_path=dotenv)
 
 
-def _keywords_from(args: argparse.Namespace, stdin: TextIO) -> KeywordList:
+def _keywords_from(args: argparse.Namespace, stdin: TextIO) -> KeywordList | None:
+    """The keywords from the command line, or None to ask for them on the page."""
     if args.keyword and args.keywords:
         raise KeywordError("Give a keyword file or -k keywords, not both.")
     if args.keyword:
         return parse_lines(args.keyword, "-k")
     if not args.keywords:
-        raise KeywordError("Give a keyword file (or - for stdin), or keywords with -k.")
+        if args.column or args.term_column:
+            raise KeywordError("--column and --term-column need a .csv file to read.")
+        return None
     return read_keywords(
         args.keywords, column=args.column, term_column=args.term_column, stdin=stdin
     )
@@ -358,6 +363,35 @@ def _pipeline(args, settings, store, saved, keywords, say, warn, deps: Deps) -> 
     runner = SearchRunner(client, settings)
     retry = lambda keyword, query, page: runner.search_one(keyword, term=query, page=page)  # noqa: E731
 
+    def start_from_page(session: SelectionSession, text: str) -> None:
+        """The person pasted keywords: add them all as not searched, then search behind the page."""
+        found = parse_text(text, "the box")  # a KeywordError here is shown next to the box
+        notes = []
+        if found.duplicates:
+            notes.append(f"Ignored {len(found.duplicates)} repeated keyword(s), keeping the first.")
+        session.populate(
+            [Outcome(k, Status.PENDING, settings.search_term(k.term)) for k in found], notes
+        )
+        say(f"Searching {len(found)} keyword{'s' if len(found) != 1 else ''} on Pixabay...")
+
+        def progress(done: int, total: int, outcome: Outcome) -> None:
+            session.update(outcome)
+            session.set_progress(done, total)
+            say(f"  {done} / {total}  {outcome.keyword.label}")
+
+        def search() -> None:
+            try:
+                report = runner.run(found, progress)
+                say(_summary(report.outcomes))
+                session.finish_search(report.stopped)
+            except BaseException as problem:  # a bug here must not leave the page waiting forever
+                session.finish_search(
+                    f"The search stopped unexpectedly ({type(problem).__name__}). Keywords marked "
+                    "not searched can be searched from this page."
+                )
+
+        threading.Thread(target=search, daemon=True).start()
+
     if saved:
         try:
             session = SelectionSession.from_state(saved.state, retry, multiple=args.multiple)
@@ -367,6 +401,12 @@ def _pipeline(args, settings, store, saved, keywords, say, warn, deps: Deps) -> 
                 "Start over with --restart."
             ) from None
         say(f"Resuming the saved session: {saved.describe(deps.wall())}.")
+    elif keywords is None:
+        # No keyword source: the page asks for them, and the search happens behind it.
+        session = SelectionSession(
+            [], retry, multiple=args.multiple, starter=lambda text: start_from_page(session, text)
+        )
+        say("No keywords were given, so the page will ask for them.")
     else:
         if keywords.duplicates:
             shown = ", ".join(keywords.duplicates[:5]) + (
