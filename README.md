@@ -72,6 +72,12 @@ keyword you can:
 Every image shows its contributor's name and a link to its Pixabay page. When you press
 **Finish**, Crivo downloads your picks, resizes them and writes the zip.
 
+![The selection page after searching three keywords, showing a grid of candidates for
+each](docs/screenshots/selection-before.png)
+
+![The same page after picking one image per keyword: each pick is checked, and the header
+shows the count](docs/screenshots/selection-after.png)
+
 ### Keywords
 
 | Source | Example |

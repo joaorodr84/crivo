@@ -26,10 +26,6 @@ Each lands as its own branch and commit.
 
 ## Later
 
-- **[P3] WINNOWER-16 — README screenshots.** The spec asks for a couple of
-  screenshots or GIFs of the selection UI. Needs a run against real results, so
-  it waits on a key; fixtures generated in code would show a UI with nothing on
-  it that a user recognises.
 - **[P2] WINNOWER-17 — Live run on three OSes.** No test hits the real API, so a
   small real run is what proves the client against Pixabay's actual responses.
   **Windows is done (2026-09-27)**: headers, filters, pages, bad-key signalling,

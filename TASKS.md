@@ -55,7 +55,6 @@ registry, not a second copy of the backlog.
 
 | ID | Pri | Status | Title |
 | --- | --- | --- | --- |
-| WINNOWER-16 | P3 | open | Screenshots of the selection UI for the README |
 | WINNOWER-17 | P2 | in progress | Run against the live Pixabay API on Windows, macOS and Linux (Windows and a real 429 done) |
 
 ## Done
@@ -63,6 +62,7 @@ registry, not a second copy of the backlog.
 | ID | Date | Status | Title | Commit |
 | --- | --- | --- | --- | --- |
 | CRIVO-2 | 2026-09-27 | done | Publish to PyPI on tag push, so `pipx install crivo` works | — |
+| WINNOWER-16 | 2026-09-27 | done | Screenshots of the selection UI for the README | — |
 | CRIVO-1 | 2026-09-27 | done | Rename the project from Winnower to Crivo | — |
 | WINNOWER-20 | 2026-09-27 | done | Tidy the tags under each thumbnail: show each once, cap the list | — |
 | WINNOWER-1 | 2026-09-26 | done | Set up the repo workflow: CLAUDE.md, agents, ledger, changelog | — |
