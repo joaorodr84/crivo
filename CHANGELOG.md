@@ -114,3 +114,7 @@ Open work is tracked in [TODO.md](TODO.md), and registered by ID in
   working out which part of the picture to keep, made two of the three
   photographs in the first run against Pixabay fail to resize, so their picks
   were left out of the zip.
+- The selection page no longer occasionally shows a network error instead of a
+  clear message when a request is refused (a wrong token or address). On a busy
+  computer the refusal could be lost when the connection was closed with the
+  request's body still unread; the body is now always read first.

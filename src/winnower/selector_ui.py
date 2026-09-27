@@ -43,6 +43,7 @@ from .selection import SelectionError, SelectionSession
 
 TOKEN_HEADER = "X-Winnower-Token"
 MAX_BODY = 16 * 1024
+DRAIN_LIMIT = 1024 * 1024  # how much of an oversized body is read and discarded
 STATIC = {
     "/static/selector.css": ("selector.css", "text/css; charset=utf-8"),
     "/static/selector.js": ("selector.js", "text/javascript; charset=utf-8"),
@@ -110,6 +111,14 @@ class _Handler(BaseHTTPRequestHandler):
         self._error(404, "Not found.")
 
     def do_POST(self) -> None:
+        # The body is consumed before anything is decided, including a rejection. A client
+        # such as http.client (or a browser on a busy machine) may send the headers and the
+        # body as separate segments. A server that answers 403 from the headers alone has
+        # closed by the time the body arrives, the OS answers a segment sent to a closed
+        # socket with a reset, and the reset can destroy the 403 the client has not read yet:
+        # `ConnectionAbortedError` (WinError 10053) instead of a response. Found by running
+        # the suite six times at once, where 2 of 6 copies failed on it.
+        raw = self._read_body()
         if not self._host_ok():
             return self._error(403, "Unexpected Host header.")
         if not self._token_ok(self.headers.get(TOKEN_HEADER)):
@@ -118,34 +127,44 @@ class _Handler(BaseHTTPRequestHandler):
         handler = self.server.routes.get(route)
         if handler is None:
             return self._error(404, "Not found.")
-        body = self._body()
-        if body is None:
-            return
+        if raw is None:
+            return self._error(413, "The request body is too large or its length is not valid.")
         try:
-            handler(body)
+            data = json.loads(raw or b"{}")
+        except ValueError:
+            return self._error(400, "The request body is not JSON.")
+        if not isinstance(data, dict):
+            return self._error(400, "The request body must be a JSON object.")
+        try:
+            handler(data)
         except SelectionError as err:
             return self._error(409, str(err))
         except (KeyError, TypeError, ValueError):
             return self._error(400, "The request was missing a field or had the wrong type.")
         self._json(200, self.server.session.snapshot())
 
-    def _body(self) -> dict[str, Any] | None:
+    def _read_body(self) -> bytes | None:
+        """The request body, or None if it is over the limit or its length is unusable.
+
+        Either way the bytes are taken off the socket (up to `DRAIN_LIMIT`), so that the
+        connection can be closed cleanly after the answer. What is read past `MAX_BODY` is
+        thrown away unparsed.
+        """
         try:
             length = int(self.headers.get("Content-Length", "0"))
         except ValueError:
-            length = -1
-        if not 0 <= length <= MAX_BODY:
-            self._error(413, "The request body is too large or its length is not valid.")
             return None
-        try:
-            data = json.loads(self.rfile.read(length) or b"{}")
-        except ValueError:
-            self._error(400, "The request body is not JSON.")
+        if length < 0:
             return None
-        if not isinstance(data, dict):
-            self._error(400, "The request body must be a JSON object.")
-            return None
-        return data
+        if length <= MAX_BODY:
+            return self.rfile.read(length)
+        remaining = min(length, DRAIN_LIMIT)
+        while remaining > 0:
+            chunk = self.rfile.read(min(remaining, 65536))
+            if not chunk:
+                break
+            remaining -= len(chunk)
+        return None
 
 
 class SelectorServer(ThreadingHTTPServer):

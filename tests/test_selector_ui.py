@@ -3,7 +3,9 @@
 import http.client
 import json
 import re
+import socket
 import threading
+import time
 from importlib import resources
 
 import pytest
@@ -177,6 +179,66 @@ class TestTheServerIsNotOpen:
 
     def test_tokens_differ_between_runs(self, live):
         assert live().token != live().token
+
+
+class TestARejectedRequestStillGetsItsAnswer:
+    """Found by running the suite under load: a POST rejected before its body was read left
+    unread bytes in the socket, so closing it made the OS send a reset, which can destroy the
+    403 the client has not read yet (WinError 10053 on Windows, ECONNRESET elsewhere)."""
+
+    def post_then_read_late(self, app, path, body, *, host=None, token=True):
+        sock = socket.create_connection(("127.0.0.1", app.port), timeout=10)
+        lines = [
+            f"POST {path} HTTP/1.1",
+            f"Host: {host or f'127.0.0.1:{app.port}'}",
+            "Content-Type: application/json",
+            f"Content-Length: {len(body)}",
+        ]
+        if token:
+            lines.append(f"{TOKEN_HEADER}: {app.token}")
+        # Headers and body as two segments, which is how http.client (and so a real browser
+        # on a busy machine) can deliver them. A server that answers from the headers alone
+        # has closed by the time the body turns up, and the body hitting a closed socket is
+        # what makes the OS reset the connection. The pause lets that happen every time; the
+        # fixed server, which waits for the body before answering, is unaffected by it.
+        sock.sendall(("\r\n".join(lines) + "\r\n\r\n").encode())
+        time.sleep(0.3)
+        sock.sendall(body)
+        time.sleep(0.1)
+        data = b""
+        try:
+            while chunk := sock.recv(65536):
+                data += chunk
+        finally:
+            sock.close()
+        return data
+
+    BODY = json.dumps({"label": "apple", "id": 1}).encode()
+
+    def test_a_bad_host(self, live):
+        app = live()
+        data = self.post_then_read_late(app, "/api/pick", self.BODY, host="evil.example")
+        assert b" 403 " in data.split(b"\r\n")[0]
+
+    def test_a_missing_token(self, live):
+        app = live()
+        data = self.post_then_read_late(app, "/api/pick", self.BODY, token=False)
+        assert b" 403 " in data.split(b"\r\n")[0]
+
+    def test_an_unknown_route(self, live):
+        app = live()
+        data = self.post_then_read_late(app, "/api/nope", self.BODY)
+        assert b" 404 " in data.split(b"\r\n")[0]
+
+    def test_a_body_over_the_limit(self, live):
+        app = live()
+        data = self.post_then_read_late(app, "/api/pick", b"x" * (MAX_BODY + 1))
+        assert b" 413 " in data.split(b"\r\n")[0]
+
+    def test_and_the_rejected_request_changed_nothing(self, live):
+        app = live()
+        self.post_then_read_late(app, "/api/pick", self.BODY, host="evil.example")
+        assert app.session.snapshot()["picks"] == 0
 
 
 class TestApi:
