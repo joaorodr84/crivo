@@ -1,14 +1,21 @@
 # Winnower task ledger
 
-Every task carries an ID of the form `WINNOWER-<n>`. IDs are assigned once, never
-reused, and never renumbered.
+Every task carries an ID. IDs are assigned once, never reused, and never
+renumbered.
 
-**Next ID to assign: `WINNOWER-22`**
+**The project is being renamed to Crivo (`CRIVO-1`, see TODO.md).** The ID prefix
+switches over with it: existing `WINNOWER-<n>` IDs (1–21, plus the still-open 16,
+17 and 20) keep their prefix forever, but every task claimed from `CRIVO-1` onward
+uses `CRIVO-<n>`. `WINNOWER-22`, the number that would have been next, is retired
+unused rather than reassigned.
+
+**Next ID to assign: `CRIVO-2`** (`WINNOWER-<n>` is frozen at 21 — the highest ever
+used — and assigns no more numbers.)
 
 If this file and history ever disagree, history wins:
 
 ```sh
-git log --oneline | grep -oE 'WINNOWER-[0-9]+' | sort -t- -k2 -n | tail -1
+git log --oneline | grep -oE 'CRIVO-[0-9]+' | sort -t- -k2 -n | tail -1
 ```
 
 ## How IDs work
@@ -48,6 +55,7 @@ registry, not a second copy of the backlog.
 
 | ID | Pri | Status | Title |
 | --- | --- | --- | --- |
+| CRIVO-1 | P1 | open | Rename the project from Winnower to Crivo |
 | WINNOWER-16 | P3 | open | Screenshots of the selection UI for the README |
 | WINNOWER-17 | P2 | in progress | Run against the live Pixabay API on Windows, macOS and Linux (Windows done) |
 | WINNOWER-20 | P3 | open | Tidy the tags under each thumbnail: show each once, cap the list |

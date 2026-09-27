@@ -16,6 +16,41 @@ Every item also carries a `WINNOWER-<n>` ID, registered in [TASKS.md](TASKS.md).
 The ID is claimed when the item is written and stays with it through the commit
 that closes it; the priority changes, the ID never does.
 
+## Now
+
+- **[P1] CRIVO-1 — Rename the project from Winnower to Crivo.** New repo home:
+  https://github.com/joaorodr84/crivo.git. One task, full rebrand, so nothing is
+  left half-renamed:
+  - **Package & CLI**: `pyproject.toml` `name = "crivo"`; move `src/winnower/` to
+    `src/crivo/`; `[project.scripts]` entry becomes `crivo = "crivo.cli:cli"`;
+    update every `import winnower` / `from winnower...` in `src/` and `tests/`.
+  - **Defaults that leak the old name**: `config.py`'s `work_dir` default
+    (`.winnower` → `.crivo`) and `output` default (`winnower.zip` → `crivo.zip`);
+    `pixabay_client.py`'s `USER_AGENT` string (currently
+    `winnower/{version} (+github.com/joaorodr84/winnower)`) repointed at the new
+    repo.
+  - **Docs**: README.md, CONTRIBUTING.md, docs/requirements.md, CLAUDE.md itself
+    (title, branch-naming examples, commit examples, every other `winnower`
+    reference), `.claude/agents/*.md` (commit, changelog-updater, test-runner all
+    name Winnower today). CHANGELOG.md's already-dated entries keep saying
+    Winnower — that's accurate history, not a typo — only its ongoing header
+    text and future entries say Crivo.
+  - **Task-ID scheme**: the prefix switches to `CRIVO-<n>`, starting at this task
+    (`CRIVO-1`, this entry). Update `scripts/commit_lint.py`'s regexes
+    (`TASK_ID_LAST`, the "subject mentions winnower" check) and
+    `scripts/test_commit_lint.py`, and TASKS.md's/CLAUDE.md's own description of
+    the scheme. **Leave existing `WINNOWER-<n>` IDs exactly as they are** —
+    including the still-open WINNOWER-16, WINNOWER-17 and WINNOWER-20 — IDs are
+    never renumbered, so they keep the old prefix permanently even once the app
+    is Crivo. `WINNOWER-22` is retired unused rather than reassigned.
+  - **Repo/remote**: `git remote set-url origin
+    https://github.com/joaorodr84/crivo.git` and push, so the renamed history
+    lands in the new repo rather than the old one.
+  - **Verification**: `python -m pytest`, `ruff check .`, `ruff format --check .`,
+    and a manual `crivo run -k ...` smoke test, since this touches the entry
+    point and every import path. Not in scope: reserving/publishing the `crivo`
+    name on PyPI — the project isn't published yet.
+
 ## Build the tool
 
 The original requirements (FR1–FR8) split one task per module, in pipeline order.
