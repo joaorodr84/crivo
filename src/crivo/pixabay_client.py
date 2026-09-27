@@ -101,7 +101,7 @@ from . import __version__
 from .config import MAX_CANDIDATES, MIN_CANDIDATES, SearchOptions
 
 API_URL = "https://pixabay.com/api/"
-USER_AGENT = f"winnower/{__version__} (+https://github.com/joaorodr84/winnower)"
+USER_AGENT = f"crivo/{__version__} (+https://github.com/joaorodr84/crivo)"
 
 RATE_LIMIT = 100  # requests per window, per key (Pixabay API docs)
 RATE_WINDOW = 60.0  # seconds

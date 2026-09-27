@@ -30,7 +30,7 @@ const safeImage = (url) =>
   safeHttps(url) || (typeof url === "string" && url.startsWith("data:image/"));
 
 async function api(path, body) {
-  const headers = { "X-Winnower-Token": token };
+  const headers = { "X-Crivo-Token": token };
   const options = { headers };
   if (body !== undefined) {
     options.method = "POST";
@@ -41,7 +41,7 @@ async function api(path, body) {
   try {
     response = await fetch(path, options);
   } catch (err) {
-    throw new Error("Winnower has stopped, so there is nothing to talk to. Close this tab.");
+    throw new Error("Crivo has stopped, so there is nothing to talk to. Close this tab.");
   }
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || response.statusText);

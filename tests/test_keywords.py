@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from winnower.keywords import (
+from crivo.keywords import (
     Keyword,
     KeywordError,
     parse_csv,

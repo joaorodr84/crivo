@@ -4,7 +4,7 @@ import zipfile
 import pytest
 from fakes import hit
 
-from winnower.packager import (
+from crivo.packager import (
     CREDITS_NAME,
     MAX_STEM,
     Entry,
@@ -14,7 +14,7 @@ from winnower.packager import (
     safe_stem,
     write_zip,
 )
-from winnower.pixabay_client import parse_response
+from crivo.pixabay_client import parse_response
 
 
 def candidate(n=1, **overrides):
@@ -130,7 +130,7 @@ class TestCredits:
     def test_says_what_licence_and_when(self):
         text = build_credits([entry()], ["apple.png"], "2026-09-27")
         assert "Pixabay Content License" in text and "https://pixabay.com/service/license/" in text
-        assert "2026-09-27" in text and "Winnower" in text
+        assert "2026-09-27" in text and "Crivo" in text
 
     def test_the_search_term_is_shown_only_when_it_differs(self):
         same = build_credits([entry("apple", term="apple")], ["apple.png"], "d")
@@ -185,7 +185,7 @@ class TestWriteZip:
         def boom(*args, **kwargs):
             raise OSError(28, "No space left on device")
 
-        monkeypatch.setattr("winnower.packager.os.replace", boom)
+        monkeypatch.setattr("crivo.packager.os.replace", boom)
         with pytest.raises(PackageError, match="No space left"):
             write_zip([entry()], target)
         assert list(tmp_path.iterdir()) == []
@@ -194,7 +194,7 @@ class TestWriteZip:
         target = tmp_path / "o.zip"
         target.write_bytes(b"old")
         monkeypatch.setattr(
-            "winnower.packager.os.replace", lambda *a: (_ for _ in ()).throw(OSError(5, "denied"))
+            "crivo.packager.os.replace", lambda *a: (_ for _ in ()).throw(OSError(5, "denied"))
         )
         with pytest.raises(PackageError):
             write_zip([entry()], target, overwrite=True)

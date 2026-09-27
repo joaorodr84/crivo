@@ -1,7 +1,7 @@
 import pytest
 
-from winnower import __version__
-from winnower.config import (
+from crivo import __version__
+from crivo.config import (
     API_KEY_ENV,
     ConfigError,
     SearchOptions,

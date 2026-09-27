@@ -1,10 +1,10 @@
 import requests
 from fakes import FakeClock, FakeResponse, FakeSession, payload
 
-from winnower.config import Settings
-from winnower.keywords import Keyword
-from winnower.pixabay_client import PixabayClient, Throttle
-from winnower.search_runner import NETWORK_STRIKES, SearchRunner, Status
+from crivo.config import Settings
+from crivo.keywords import Keyword
+from crivo.pixabay_client import PixabayClient, Throttle
+from crivo.search_runner import NETWORK_STRIKES, SearchRunner, Status
 
 EMPTY = {"total": 0, "totalHits": 0, "hits": []}
 

@@ -5,8 +5,8 @@ import requests
 from fakes import FakeClock, FakeResponse, FakeSession, hit, png_bytes
 from PIL import Image
 
-from winnower.downloader import MAX_BYTES, Downloader, DownloadError
-from winnower.pixabay_client import Candidate, parse_response
+from crivo.downloader import MAX_BYTES, Downloader, DownloadError
+from crivo.pixabay_client import Candidate, parse_response
 
 PNG = png_bytes((40, 30))
 
@@ -43,7 +43,7 @@ class TestFetch:
         assert path == tmp_path / "originals" / "7-large.png"
         assert Image.open(path).size == (40, 30)
         assert session.calls[0]["url"] == "https://pixabay.com/get/7_1280.jpg"
-        assert session.calls[0]["headers"]["User-Agent"].startswith("winnower/")
+        assert session.calls[0]["headers"]["User-Agent"].startswith("crivo/")
 
     def test_a_cached_original_is_returned_without_a_request(self, tmp_path):
         downloader, session, _ = make(tmp_path)
@@ -181,7 +181,7 @@ class TestGuards:
         assert leftovers(tmp_path / "originals") == []
 
     def test_a_stream_that_outgrows_the_cap_is_cut_off(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("winnower.downloader.MAX_BYTES", 100)
+        monkeypatch.setattr("crivo.downloader.MAX_BYTES", 100)
         downloader, _, _ = make(tmp_path, [FakeResponse(200, content=b"x" * 500)])
         with pytest.raises(DownloadError, match="over 100 MB"):
             downloader.fetch(candidate())

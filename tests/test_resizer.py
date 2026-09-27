@@ -5,7 +5,7 @@ import pytest
 from fakes import png_bytes
 from PIL import Image
 
-from winnower.resizer import (
+from crivo.resizer import (
     _contained,
     _cover_region,
     encode,

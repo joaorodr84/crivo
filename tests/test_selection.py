@@ -4,10 +4,10 @@ import threading
 import pytest
 from fakes import hit
 
-from winnower.keywords import Keyword
-from winnower.pixabay_client import SearchResult, parse_response
-from winnower.search_runner import Outcome, Status
-from winnower.selection import SelectionError, SelectionSession
+from crivo.keywords import Keyword
+from crivo.pixabay_client import SearchResult, parse_response
+from crivo.search_runner import Outcome, Status
+from crivo.selection import SelectionError, SelectionSession
 
 
 def result(ids, page=1, total_hits=100, per_page=3):

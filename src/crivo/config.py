@@ -114,8 +114,8 @@ class Settings:
     # Download imageURL instead of largeImageURL; only present in responses for
     # accounts Pixabay has approved for full API access.
     full_size: bool = False
-    work_dir: Path = Path(".winnower")
-    output: Path = Path("winnower.zip")
+    work_dir: Path = Path(".crivo")
+    output: Path = Path("crivo.zip")
 
     def __post_init__(self) -> None:
         if not MIN_CANDIDATES <= self.candidates <= MAX_CANDIDATES:

@@ -3,11 +3,11 @@ import json
 import pytest
 from fakes import FakeClock, hit
 
-from winnower.keywords import Keyword
-from winnower.pixabay_client import parse_response
-from winnower.search_runner import Outcome, Status
-from winnower.selection import SelectionSession
-from winnower.session_store import VERSION, SessionError, SessionStore
+from crivo.keywords import Keyword
+from crivo.pixabay_client import parse_response
+from crivo.search_runner import Outcome, Status
+from crivo.selection import SelectionSession
+from crivo.session_store import VERSION, SessionError, SessionStore
 
 KEY = "SECRET-KEY-123"
 
@@ -127,7 +127,7 @@ class TestSaving:
         def boom(*args):
             raise OSError(28, "No space left on device")
 
-        monkeypatch.setattr("winnower.session_store.os.replace", boom)
+        monkeypatch.setattr("crivo.session_store.os.replace", boom)
         store.save(first.export())
         assert "No space" in store.error
         monkeypatch.undo()

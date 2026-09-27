@@ -11,11 +11,11 @@ from importlib import resources
 import pytest
 from fakes import hit
 
-from winnower.keywords import Keyword
-from winnower.pixabay_client import parse_response
-from winnower.search_runner import Outcome, Status
-from winnower.selection import SelectionSession
-from winnower.selector_ui import MAX_BODY, TOKEN_HEADER, SelectorServer, serve
+from crivo.keywords import Keyword
+from crivo.pixabay_client import parse_response
+from crivo.search_runner import Outcome, Status
+from crivo.selection import SelectionSession
+from crivo.selector_ui import MAX_BODY, TOKEN_HEADER, SelectorServer, serve
 
 
 def found(label, ids, page=1, query=None, **hit_overrides):
@@ -76,7 +76,7 @@ class TestPageAndStatics:
         app = live()
         status, headers, body = app.call("GET", f"/?t={app.token}", token=False)
         assert status == 200 and headers["content-type"].startswith("text/html")
-        assert b"Winnower" in body and b"/static/selector.js" in body
+        assert b"Crivo" in body and b"/static/selector.js" in body
         policy = headers["content-security-policy"]
         assert "script-src 'self'" in policy and "default-src 'none'" in policy
         assert headers["cache-control"] == "no-store"
@@ -112,14 +112,14 @@ class TestPageAndStatics:
 
     def test_the_page_never_builds_html_from_strings(self):
         """Contributor names and tags come from Pixabay; the page must only use textContent."""
-        script = resources.files("winnower").joinpath("static", "selector.js").read_text("utf-8")
+        script = resources.files("crivo").joinpath("static", "selector.js").read_text("utf-8")
         for banned in ("innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval("):
             assert banned not in script
 
     def test_the_finish_panel_does_not_share_a_class_with_completed_keywords(self):
         """Found in the browser: a `.done` rule meant for the finish panel also centred and
         re-padded every keyword section that had a pick, because sections use `.done` too."""
-        styles = resources.files("winnower").joinpath("static", "selector.css").read_text("utf-8")
+        styles = resources.files("crivo").joinpath("static", "selector.css").read_text("utf-8")
         assert not re.search(r"(^|[\s,])\.done\s*[{,]", styles, re.M)
 
 
@@ -373,7 +373,7 @@ class TestStartPage:
         assert data["phase"] == "start" and data["keywords"] == [] and data["picks"] == 0
 
     def test_the_box_is_on_the_page_and_its_text_needs_no_html(self):
-        page = resources.files("winnower").joinpath("static", "selector.html").read_text("utf-8")
+        page = resources.files("crivo").joinpath("static", "selector.html").read_text("utf-8")
         assert 'id="start-text"' in page and 'id="start-button"' in page
 
     def test_posting_the_text_starts_the_search(self, live):

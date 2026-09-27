@@ -1,6 +1,6 @@
-# Contributing to Winnower
+# Contributing to Crivo
 
-Thanks for looking. Winnower is small on purpose, so most changes are easy to review. This is
+Thanks for looking. Crivo is small on purpose, so most changes are easy to review. This is
 what you need to know to make one.
 
 ## Set up
@@ -8,14 +8,14 @@ what you need to know to make one.
 Python 3.10 or newer.
 
 ```console
-$ git clone https://github.com/joaorodr84/winnower.git
-$ cd winnower
+$ git clone https://github.com/joaorodr84/crivo.git
+$ cd crivo
 $ python -m venv .venv
 $ .venv/bin/pip install -e ".[dev]"      # Windows: .venv\Scripts\pip install -e ".[dev]"
 $ git config core.hooksPath .githooks    # once per clone: checks your commit messages
 ```
 
-You do **not** need a Pixabay API key to work on Winnower, and you should not use yours in a
+You do **not** need a Pixabay API key to work on Crivo, and you should not use yours in a
 test (see below). You only need one to run the tool for real.
 
 ## Run the checks
@@ -50,7 +50,7 @@ rename them are the usual ways to find out.
 
 Comments in this codebase explain *why*, not what. A comment that restates the line below it is
 noise. A good one names the alternative that was rejected and the number behind the decision:
-the header of `src/winnower/pixabay_client.py` is the model.
+the header of `src/crivo/pixabay_client.py` is the model.
 
 ## Pixabay's rules are design constraints
 
@@ -64,7 +64,7 @@ of them. A change that relaxes one is a decision to discuss first, not a refacto
   person has picked, the image is downloaded and everything after that uses the local copy.
 - **Attribution is shown at selection time**, and the zip carries a `CREDITS.txt`.
 - **Search responses are cached for 24 hours**, and requests stay under 100 per 60 seconds per
-  key. Winnower is human-paced by design: it must not grow an unattended search loop, and a
+  key. Crivo is human-paced by design: it must not grow an unattended search loop, and a
   retry is something a person clicks.
 - **A network failure, a 429 or a keyword with no results never crashes a run.** Each is a state
   the person sees and can act on.
@@ -74,8 +74,8 @@ of them. A change that relaxes one is a decision to discuss first, not a refacto
 Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/):
 
 ```text
-feat: Show each candidate's tags under its thumbnail (WINNOWER-12)
-fix(client): Stop retrying a 400 as if it were a rate limit (WINNOWER-13)
+feat: Show each candidate's tags under its thumbnail (CRIVO-12)
+fix(client): Stop retrying a 400 as if it were a rate limit (CRIVO-13)
 docs: Fix the setup steps for Windows
 ```
 
@@ -85,9 +85,11 @@ for changes that ship none. The body is where the reasoning goes: what was wrong
 approach, what you considered and rejected, how you checked it. A one-line commit for a real
 change is under-written here.
 
-Work is tracked as tasks with an ID like `WINNOWER-12`, listed in [TASKS.md](TASKS.md) and
+Work is tracked as tasks with an ID like `CRIVO-12`, listed in [TASKS.md](TASKS.md) and
 described in [TODO.md](TODO.md). If you are working on a task, put its ID at the end of the
-subject. Pure housekeeping (a typo, a formatting pass) does not need one.
+subject. Pure housekeeping (a typo, a formatting pass) does not need one. `CRIVO` is the current
+prefix; a handful of tasks opened before the rename (CRIVO-1) still carry the retired `WINNOWER-<n>`
+prefix and keep it permanently, since an ID is never renumbered.
 
 The commit-message hook runs `scripts/commit_lint.py`, and CI runs it over every pushed commit.
 Both are plain Python with no dependencies, so you do not need Node installed to make a commit.

@@ -1,4 +1,4 @@
-# Winnower
+# Crivo
 
 A CLI plus local web page that searches Pixabay for a list of keywords, lets a person pick which
 result to keep for each one, resizes the picks to a common size and hands back a zip. Python, MIT,
@@ -14,7 +14,7 @@ Create the branch before the first edit, not after. When a request will change f
 so no work lands in the working tree while `HEAD` is on `main`.
 
 - `<name>` is a plain `kebab-case-summary` of the change, prefixed with the task ID:
-  `winnower-12-show-candidate-tags`. Never use a `p1-`/`p2-` priority prefix.
+  `crivo-12-show-candidate-tags`. Never use a `p1-`/`p2-` priority prefix.
 - Already on a non-`main` branch: stay on it, don't branch off a branch.
 - Skip branching for read-only work: answering questions, reading code, running tests,
   investigating a bug without fixing it. Branch the moment an investigation becomes a fix.
@@ -36,18 +36,22 @@ This ensures "finished" is actually finished: feature work, commits, and bookkee
 
 ## Task IDs
 
-Every task carries an ID `WINNOWER-<n>`, registered in [TASKS.md](TASKS.md), which holds the next
-free number at the top — take it and increment it in the same commit that uses it.
+Every task carries an ID `CRIVO-<n>`, registered in [TASKS.md](TASKS.md), which holds the next
+free number at the top — take it and increment it in the same commit that uses it. `CRIVO` is the
+current prefix; `WINNOWER-<n>` is the retired one a handful of tasks claimed before the project's
+rename (`CRIVO-1`) and keep permanently — including the still-open WINNOWER-16, WINNOWER-17 and
+WINNOWER-20 — since an ID is never renumbered. `WINNOWER-<n>` is frozen at 21 (the highest ever
+used) and assigns no more numbers; every new task takes the next `CRIVO-<n>`.
 
 **Claim the ID when the task is written down, not when it ships.** A new `TODO.md` entry gets one
 immediately; the commit that closes it reuses that same ID. One ID per *task*: a feature landed over
 two commits repeats the ID in both subjects, and a commit closing two tasks names both —
-`(WINNOWER-6, WINNOWER-7)`.
+`(CRIVO-6, CRIVO-7)`.
 
-- Commit subject: `feat: Show each candidate's tags under its thumbnail (WINNOWER-12)` — ID in
+- Commit subject: `feat: Show each candidate's tags under its thumbnail (CRIVO-12)` — ID in
   parentheses at the end of the description, inside the subject line so the recovery grep keeps
   working. The format around it is Conventional Commits (see **Commit messages**).
-- Branch name: `winnower-12-show-candidate-tags`. This is the one prefix that belongs there; the
+- Branch name: `crivo-12-show-candidate-tags`. This is the one prefix that belongs there; the
   banned `p1-`/`p2-` priority prefix is a different thing and still banned.
 - Not every commit needs one. Bookkeeping — a typo fix, a formatting pass, a `TODO.md` tidy — goes
   in unnumbered rather than inflating the counter.
@@ -70,15 +74,15 @@ commit.
 If `TASKS.md` and history disagree, history wins:
 
 ```sh
-git log --oneline | grep -oE 'WINNOWER-[0-9]+' | sort -t- -k2 -n | tail -1
+git log --oneline | grep -oE 'CRIVO-[0-9]+' | sort -t- -k2 -n | tail -1
 ```
 
 ## Commit messages
 
-Winnower follows [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/):
+Crivo follows [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/):
 
 ```text
-<type>[optional scope][!]: <description> (WINNOWER-<n>)
+<type>[optional scope][!]: <description> (CRIVO-<n>)
 
 [body]
 
@@ -95,7 +99,7 @@ Winnower follows [Conventional Commits 1.0.0](https://www.conventionalcommits.or
 - **Body stays substantial**: what was wrong, why this approach, what was decided and rejected, how
   it was verified. Governing the subject line is not licence to write a one-line commit.
 - **Breaking changes** take a `!` before the colon *and* a `BREAKING CHANGE:` footer saying what to
-  migrate. Winnower is `0.x`, where a breaking change is allowed in a minor bump (see **Versions**) —
+  migrate. Crivo is `0.x`, where a breaking change is allowed in a minor bump (see **Versions**) —
   the marker is what keeps it findable regardless.
 - **Footers** are `Token: value` with hyphenated tokens; `BREAKING CHANGE` keeps its space.
   `Co-Authored-By:` is a footer like any other.
@@ -103,11 +107,11 @@ Winnower follows [Conventional Commits 1.0.0](https://www.conventionalcommits.or
 Worked examples:
 
 ```text
-feat: Show each candidate's tags under its thumbnail (WINNOWER-12)
+feat: Show each candidate's tags under its thumbnail (CRIVO-12)
 
-fix(client): Stop retrying a 400 as if it were a rate limit (WINNOWER-13)
+fix(client): Stop retrying a 400 as if it were a rate limit (CRIVO-13)
 
-refactor(session)!: Rename the picks key to selections (WINNOWER-14)
+refactor(session)!: Rename the picks key to selections (CRIVO-14)
 
 docs: Fix the setup steps for Windows
 ```
@@ -181,7 +185,7 @@ design choices below exist, and a change that relaxes one is a decision, not a r
   person sees and can act on.
 
 The libraries the original spec named for the client and downloader were evaluated and rejected —
-the reasons, with what was measured, are in the header of `src/winnower/pixabay_client.py`.
+the reasons, with what was measured, are in the header of `src/crivo/pixabay_client.py`.
 
 ## Tests
 
@@ -189,7 +193,7 @@ Two suites, both `pytest`, run from the repo root:
 
 | Suite | Command | What it is |
 | --- | --- | --- |
-| Winnower | `python -m pytest tests` | Unit and integration tests for the package; the selection UI is exercised over real HTTP on an ephemeral port |
+| Crivo | `python -m pytest tests` | Unit and integration tests for the package; the selection UI is exercised over real HTTP on an ephemeral port |
 | Repo tooling | `python -m pytest scripts` | The commit-message linter and the release derivation |
 
 `python -m pytest` alone runs both. Lint and format: `ruff check .` and `ruff format --check .`.
@@ -221,7 +225,7 @@ What owes nothing: documentation, `TODO.md`/`TASKS.md`/`CHANGELOG.md` bookkeepin
 Comments here record *why*, name the alternative that was rejected, and carry the numbers behind
 the decision.
 
-The header of `src/winnower/pixabay_client.py` is the reference. It says why the client is not the
+The header of `src/crivo/pixabay_client.py` is the reference. It says why the client is not the
 library the spec named, and pays for it with the four failures reproduced against it: a 429 crashes
 with `AttributeError` after a single request; a cache entry older than 24h raises `KeyError`; the API
 key is written in plaintext into the cache file; `min_width=None` and an unescaped `&` go out in

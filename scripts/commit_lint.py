@@ -1,6 +1,6 @@
 """Enforces the commit-message convention documented in CLAUDE.md -> Commit messages.
 
-Watchr does this with commitlint. Winnower is a Python project whose contributors
+Watchr does this with commitlint. Crivo is a Python project whose contributors
 should not need Node installed to make a commit, so this is the same rule set as a
 single dependency-free module rather than a package.json that exists only to lint
 messages. Rejected: `commitizen`/`gitlint`, which would each be a dev dependency and
@@ -14,9 +14,12 @@ plus four local ones, because the convention here is a near-miss of the stock on
   config-conventional's own `subject-case` cannot say that: 'sentence-case' also
   forces the *rest* of the subject to lowercase, which would reject a subject that
   legitimately names a camelCase identifier.
-- The task ID goes last, in parentheses: `(WINNOWER-12)` or
-  `(WINNOWER-6, WINNOWER-7)`. Checked only when the subject mentions WINNOWER at all,
-  since bookkeeping commits are allowed to carry no ID.
+- The task ID goes last, in parentheses: `(CRIVO-12)` or `(CRIVO-6, CRIVO-7)`. The
+  prefix was WINNOWER before CRIVO-1 and old IDs are never renumbered, so a commit
+  closing one of the tasks still open under that prefix (WINNOWER-16, WINNOWER-17,
+  WINNOWER-20) still names it that way; both prefixes are accepted. Checked only
+  when the subject mentions WINNOWER or CRIVO at all, since bookkeeping commits are
+  allowed to carry no ID.
 - A `!` in the header and a `BREAKING CHANGE:` footer come together. The spec allows
   either alone; CLAUDE.md asks for both, so a release derived from the types
   (`scripts/version.py`) never depends on which of the two someone remembered.
@@ -52,7 +55,11 @@ TYPES = (
 HEADER_MAX_LENGTH = 100
 
 HEADER = re.compile(r"^(?P<type>[^\s(!:]+)(?:\((?P<scope>[^)]*)\))?(?P<bang>!)?: (?P<subject>.*)$")
-TASK_ID_LAST = re.compile(r" \(WINNOWER-\d+(, WINNOWER-\d+)*\)$")
+# Both prefixes are accepted: CRIVO is current, WINNOWER is the retired prefix that
+# still-open tasks (WINNOWER-16, WINNOWER-17, WINNOWER-20) keep permanently.
+TASK_ID = r"(?:WINNOWER|CRIVO)-\d+"
+TASK_ID_LAST = re.compile(rf" \({TASK_ID}(, {TASK_ID})*\)$")
+TASK_ID_MENTION = re.compile(r"winnower|crivo", re.IGNORECASE)
 BREAKING_FOOTER = re.compile(r"^BREAKING[ -]CHANGE: \S", re.MULTILINE)
 
 # Trailer tokens recognised when checking that the footer block is separated from
@@ -84,8 +91,8 @@ def lint(message: str) -> list[str]:
     match = HEADER.match(header)
     if not match or not match["subject"] or not match["type"]:
         return [
-            "header must look like `<type>[(scope)][!]: <Description> (WINNOWER-<n>)`, "
-            f"e.g. `feat: Show each candidate's tags (WINNOWER-12)`; got {header!r}"
+            "header must look like `<type>[(scope)][!]: <Description> (CRIVO-<n>)`, "
+            f"e.g. `feat: Show each candidate's tags (CRIVO-12)`; got {header!r}"
         ]
 
     errors: list[str] = []
@@ -117,10 +124,8 @@ def lint(message: str) -> list[str]:
         errors.append("description must not end with a full stop")
     if not re.match(r"[A-Z`]", subject):
         errors.append("description must start with a capital letter (or a backticked identifier)")
-    if re.search(r"winnower", subject, re.IGNORECASE) and not TASK_ID_LAST.search(subject):
-        errors.append(
-            "task ID must be last and formatted as (WINNOWER-12) or (WINNOWER-6, WINNOWER-7)"
-        )
+    if TASK_ID_MENTION.search(subject) and not TASK_ID_LAST.search(subject):
+        errors.append("task ID must be last and formatted as (CRIVO-12) or (CRIVO-6, CRIVO-7)")
 
     if len(lines) > 1 and lines[1] != "":
         errors.append("the body must be separated from the header by a blank line")

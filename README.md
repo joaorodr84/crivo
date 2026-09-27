@@ -1,4 +1,4 @@
-# Winnower
+# Crivo
 
 Give it a list of keywords. It searches [Pixabay](https://pixabay.com) for each one, shows you
 the candidates in your browser so you can pick the image you want, then resizes your picks to
@@ -9,24 +9,24 @@ size", where the searching, downloading, resizing and packaging are tedious and 
 is the only part that needs you.
 
 ```console
-$ winnower run examples/keywords_sample.txt --size 256
+$ crivo run examples/keywords_sample.txt --size 256
 Searching 12 keywords on Pixabay...
   1 / 12  apple
   ...
 12 with results
 Pick your images at http://127.0.0.1:52431/?t=...
 Downloading 11 images...
-Wrote winnower.zip with 11 images for 11 keywords, plus CREDITS.txt.
+Wrote crivo.zip with 11 images for 11 keywords, plus CREDITS.txt.
 ```
 
 ## You need your own Pixabay API key
 
-Winnower does not ship, share or proxy a key. Everyone who runs it uses their own, which is
+Crivo does not ship, share or proxy a key. Everyone who runs it uses their own, which is
 free: log in at <https://pixabay.com/api/docs/> and the key is shown in the parameters table.
 Pixabay ties keys to accounts and rate limits them per key, so a shared key would not work
 well for anyone.
 
-Put it in the environment, or in a `.env` file in the folder you run Winnower from:
+Put it in the environment, or in a `.env` file in the folder you run Crivo from:
 
 ```console
 $ cp .env.example .env        # then edit .env and paste your key
@@ -37,7 +37,7 @@ PIXABAY_API_KEY=your_key_here
 ```
 
 The key is deliberately not a command-line option: a flag ends up in your shell history and in
-the process list that every user on the machine can read. `.env` is gitignored. Winnower never
+the process list that every user on the machine can read. `.env` is gitignored. Crivo never
 writes the key into its cache, its output or an error message.
 
 ## Install
@@ -45,22 +45,22 @@ writes the key into its cache, its output or an error message.
 Python 3.10 or newer, on Windows, macOS or Linux.
 
 ```console
-$ git clone https://github.com/joaorodr84/winnower.git
-$ cd winnower
+$ git clone https://github.com/joaorodr84/crivo.git
+$ cd crivo
 $ python -m venv .venv
 $ .venv/bin/pip install .               # Windows: .venv\Scripts\pip install .
 ```
 
-That installs a `winnower` command. (`python -m winnower` does the same thing.) If you
+That installs a `crivo` command. (`python -m crivo` does the same thing.) If you
 activate the virtual environment first, you can drop the `.venv/bin/` prefix.
 
 ## Use
 
 ```console
-$ winnower run keywords.txt
+$ crivo run keywords.txt
 ```
 
-Winnower searches every keyword, then prints an address and opens it in your browser. For each
+Crivo searches every keyword, then prints an address and opens it in your browser. For each
 keyword you can:
 
 - **pick** an image by clicking it (click another to change your mind);
@@ -69,17 +69,17 @@ keyword you can:
 - **load more results** without losing what you have already picked.
 
 Every image shows its contributor's name and a link to its Pixabay page. When you press
-**Finish**, Winnower downloads your picks, resizes them and writes the zip.
+**Finish**, Crivo downloads your picks, resizes them and writes the zip.
 
 ### Keywords
 
 | Source | Example |
 | --- | --- |
-| A `.txt` file, one keyword per line | `winnower run keywords.txt` |
-| A `.csv` file with a header row | `winnower run words.csv --column word` |
-| Standard input | `cat keywords.txt \| winnower run -` |
-| Directly on the command line | `winnower run -k apple -k "hot-dog \| hot dog"` |
-| Typed or pasted into a box on the page | `winnower run` (no keywords at all) |
+| A `.txt` file, one keyword per line | `crivo run keywords.txt` |
+| A `.csv` file with a header row | `crivo run words.csv --column word` |
+| Standard input | `cat keywords.txt \| crivo run -` |
+| Directly on the command line | `crivo run -k apple -k "hot-dog \| hot dog"` |
+| Typed or pasted into a box on the page | `crivo run` (no keywords at all) |
 
 With no keywords given, the page opens with a box to paste your list into. The search then runs
 behind the page, which shows how far it has got and fills in each keyword as it is searched, so
@@ -101,7 +101,7 @@ names, so a label repeated in a different case is dropped and reported.
 
 ### Options
 
-`winnower run --help` lists everything. The ones you are most likely to want:
+`crivo run --help` lists everything. The ones you are most likely to want:
 
 | Option | What it does |
 | --- | --- |
@@ -113,18 +113,18 @@ names, so a label repeated in a different case is dropped and reported.
 | `--term-template '{term} icon'` | Wrap every search term, for example to find icons or flat illustrations. |
 | `--image-type`, `--orientation`, `--category`, `--colors`, `--min-width`, `--min-height`, `--safesearch`, `--editors-choice`, `--order`, `--lang` | Pixabay's own search filters. |
 | `--multiple` | Allow more than one image per keyword (`apple.png`, `apple-2.png`, ...). |
-| `-o`, `--output ZIP` | Where to write the zip (default `winnower.zip`). It is not replaced unless you pass `--overwrite`. |
-| `--work-dir DIR` | Search cache, downloaded originals and the saved session (default `.winnower`). |
+| `-o`, `--output ZIP` | Where to write the zip (default `crivo.zip`). It is not replaced unless you pass `--overwrite`. |
+| `--work-dir DIR` | Search cache, downloaded originals and the saved session (default `.crivo`). |
 | `--resume` / `--restart` | Continue the saved session, or throw an unfinished one away and start over. |
 | `--no-browser` | Print the address instead of opening it. |
 
 ### Pausing and resuming
 
-Your picks are saved as you make them, in `session.json` inside the work directory (`.winnower`
+Your picks are saved as you make them, in `session.json` inside the work directory (`.crivo`
 by default). Close the terminal, press Ctrl-C, or shut the laptop, and carry on later:
 
 ```console
-$ winnower run --resume
+$ crivo run --resume
 ```
 
 Resuming reads the keywords from the saved session, so you give it none, and it does not search
@@ -158,9 +158,9 @@ Nothing that can go wrong on the network or at Pixabay ends the run with a trace
 - A keyword with **no results**, or whose search **failed**, is flagged on the page. Search
   again with another term, or skip it.
 - If Pixabay **refuses your key**, the **rate limit is used up**, or Pixabay **cannot be
-  reached three times in a row**, Winnower stops searching and says so. What it found is kept,
+  reached three times in a row**, Crivo stops searching and says so. What it found is kept,
   the page still opens, and the remaining keywords show as not searched so you can retry them.
-  A failing request is tried a few times with growing pauses and then given up on; Winnower
+  A failing request is tried a few times with growing pauses and then given up on; Crivo
   does not keep looping in the background.
 - A picked image that **cannot be downloaded** is left out of the zip and listed after the run.
 
@@ -173,7 +173,7 @@ an output file that already exists); `3` the zip was written but some picks are 
 
 ## About Pixabay, and what you are agreeing to
 
-Winnower is a small tool that talks to Pixabay's API on your behalf and is built to respect
+Crivo is a small tool that talks to Pixabay's API on your behalf and is built to respect
 [Pixabay's API terms](https://pixabay.com/api/docs/):
 
 - **No permanent hotlinking.** Pixabay's image addresses are only used to show you the search
@@ -183,10 +183,10 @@ Winnower is a small tool that talks to Pixabay's API on your behalf and is built
   link to its Pixabay page, and the zip includes a `CREDITS.txt`.
 - **Caching and rate limits.** Search results are cached for 24 hours, requests are held to
   Pixabay's limit of 100 per minute per key, and a rate-limit response is waited out.
-- **Human-paced.** A person chooses every image. Winnower is not a way to bulk-download
+- **Human-paced.** A person chooses every image. Crivo is not a way to bulk-download
   Pixabay, and it will not run searches in an unattended loop.
 
-The [MIT licence](LICENSE) in this repository covers Winnower's **code only**. It says nothing
+The [MIT licence](LICENSE) in this repository covers Crivo's **code only**. It says nothing
 about the images you download: those are under the
 [Pixabay Content License](https://pixabay.com/service/license/), which is what allows you to use
 and modify them (resizing included), commercially or not, without attribution. It does not
@@ -198,11 +198,11 @@ The repository contains no Pixabay images and never will; please do not commit a
 
 ## Status
 
-Winnower is at version 0.x. The whole pipeline works and is covered by automated tests on
+Crivo is at version 0.x. The whole pipeline works and is covered by automated tests on
 Windows, macOS and Linux, but those tests use a simulated Pixabay and never touch the network.
 It has been run against the live API on Windows, where it found and fixed a real bug that
 no simulated test could. The same run has not yet been made on macOS or Linux, so expect a
-rough edge or two there. Bug reports with the message Winnower printed are welcome.
+rough edge or two there. Bug reports with the message Crivo printed are welcome.
 
 ## Contributing
 

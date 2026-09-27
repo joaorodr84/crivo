@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Winnower are documented in this file.
+All notable changes to Crivo are documented in this file.
 
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Entries below are grouped by date of the work rather than by version number.

@@ -1,6 +1,6 @@
-# A small list to try Winnower on:
+# A small list to try Crivo on:
 #
-#   winnower run examples/keywords_sample.txt --size 256
+#   crivo run examples/keywords_sample.txt --size 256
 #
 # One keyword per line. Blank lines and lines starting with # are ignored.
 # `label | search term` names the result file after the label but searches for the term.

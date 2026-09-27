@@ -74,7 +74,7 @@ Match the voice already in the file: plain language, present tense, describing t
 Rules:
 
 - One bullet per user-facing change. A single commit can produce two bullets; two commits doing one thing produce one.
-- No conventional-commit prefixes (`feat:`, `fix:`), no task IDs (`(WINNOWER-12)`), no bug numbers as the entire bullet, no commit hashes. Commit *subjects* carry the type prefix and the ID by convention (`CLAUDE.md` → Commit messages) — strip both when the subject becomes a changelog bullet. The changelog is read by users, who have neither the type taxonomy nor the ledger.
+- No conventional-commit prefixes (`feat:`, `fix:`), no task IDs (`(CRIVO-12)`), no bug numbers as the entire bullet, no commit hashes. Commit *subjects* carry the type prefix and the ID by convention (`CLAUDE.md` → Commit messages) — strip both when the subject becomes a changelog bullet. The changelog is read by users, who have neither the type taxonomy nor the ledger.
 - Name files or symbols only when they're genuinely the clearest way to say it (e.g. an env var, an endpoint path, a config key). Otherwise describe behaviour.
 - Include the *why* when the change would otherwise look arbitrary, in the same sentence — don't add a separate rationale line.
 - Wrap prose at roughly 80 columns, matching the rest of the file.

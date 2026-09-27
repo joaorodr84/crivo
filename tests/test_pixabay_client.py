@@ -4,8 +4,8 @@ import pytest
 import requests
 from fakes import FakeClock, FakeResponse, FakeSession, hit, payload
 
-from winnower.config import SearchOptions
-from winnower.pixabay_client import (
+from crivo.config import SearchOptions
+from crivo.pixabay_client import (
     API_URL,
     CACHE_TTL,
     BadResponse,
@@ -138,7 +138,7 @@ class TestSearch:
         call = session.calls[0]
         assert call["url"] == API_URL
         assert call["params"]["key"] == KEY
-        assert call["headers"]["User-Agent"].startswith("winnower/")
+        assert call["headers"]["User-Agent"].startswith("crivo/")
         assert call["timeout"]
 
     def test_special_characters_are_left_to_requests_to_encode(self):

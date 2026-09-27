@@ -10,10 +10,10 @@ import requests
 from fakes import FakeClock, FakeResponse, RoutingSession, hit, png_bytes
 from PIL import Image
 
-from winnower import __version__
-from winnower.cli import EXIT_ERROR, EXIT_INTERRUPTED, EXIT_OK, EXIT_PARTIAL, main
-from winnower.pixabay_client import API_URL
-from winnower.selection import SelectionError
+from crivo import __version__
+from crivo.cli import EXIT_ERROR, EXIT_INTERRUPTED, EXIT_OK, EXIT_PARTIAL, main
+from crivo.pixabay_client import API_URL
+from crivo.selection import SelectionError
 
 KEY = "SECRET-KEY-123"
 PNG = png_bytes((80, 40), (200, 30, 30))
@@ -193,7 +193,7 @@ class TestOptionsReachTheQuery:
 class TestFailuresBeforeAnythingIsSpent:
     def test_no_api_key(self, run):
         assert run(run.keywords("apple\n"), env={}) == EXIT_ERROR
-        assert "winnower: error: No Pixabay API key" in run.err.getvalue()
+        assert "crivo: error: No Pixabay API key" in run.err.getvalue()
         assert run.network.calls == []
 
     @pytest.mark.parametrize(
@@ -201,7 +201,7 @@ class TestFailuresBeforeAnythingIsSpent:
     )
     def test_a_bad_option_is_an_error_not_a_wasted_search(self, run, argv):
         assert run(run.keywords("apple\n"), *argv) == EXIT_ERROR
-        assert run.err.getvalue().startswith("winnower: error:")
+        assert run.err.getvalue().startswith("crivo: error:")
         assert run.network.calls == []
 
     def test_a_choice_argparse_knows_is_a_usage_error(self, run):
@@ -470,7 +470,7 @@ class TestSessions:
         def failing_save(self, state, completed=False):
             self.error = "disk full"
 
-        monkeypatch.setattr("winnower.session_store.SessionStore.save", failing_save)
+        monkeypatch.setattr("crivo.session_store.SessionStore.save", failing_save)
         assert run(run.keywords("apple\n"), serve_fn=picker("apple")) == EXIT_OK
         assert "Could not save the session file (disk full)" in run.err.getvalue()
 

@@ -19,6 +19,10 @@ BREAKING_BODY = "\n\nThe key moved.\n\nBREAKING CHANGE: rename `picks` to `selec
         "feat: Show each candidate's tags under its thumbnail (WINNOWER-12)",
         "fix(client): Stop retrying a 400 as if it were a rate limit (WINNOWER-13)",
         "feat: Resize and pad the picks (WINNOWER-6, WINNOWER-7)",
+        # CRIVO is the current prefix; WINNOWER-<n> IDs are never renumbered, so a
+        # commit can still close one under the old prefix, even alongside a new one.
+        "docs: Rename the project from Winnower to Crivo (CRIVO-1)",
+        "feat: Tidy the tags under each thumbnail (WINNOWER-20, CRIVO-2)",
         "docs: Fix the setup steps for Windows",
         "refactor(session)!: Rename the picks key to selections (WINNOWER-14)" + BREAKING_BODY,
         "fix: `pixabay_client` keeps the key out of the cache (WINNOWER-2)",
@@ -56,6 +60,8 @@ def test_accepts(message):
         ("feat: Show tags (WINNOWER12)", "task ID must be last"),
         ("feat: Show tags (winnower-12)", "task ID must be last"),
         ("feat: Show tags (WINNOWER-12) and more", "task ID must be last"),
+        ("feat: Show tags (CRIVO12)", "task ID must be last"),
+        ("feat: Show tags (crivo-12)", "task ID must be last"),
         ("feat: Show tags\nbody with no blank line", "blank line"),
         ("feat!: Show tags (WINNOWER-2)", "BREAKING CHANGE"),
         ("feat: Show tags (WINNOWER-2)\n\nBREAKING CHANGE: it moved", "needs a `!`"),

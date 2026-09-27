@@ -1,10 +1,10 @@
-# Winnower task ledger
+# Crivo task ledger
 
 Every task carries an ID. IDs are assigned once, never reused, and never
 renumbered.
 
-**The project is being renamed to Crivo (`CRIVO-1`, see TODO.md).** The ID prefix
-switches over with it: existing `WINNOWER-<n>` IDs (1–21, plus the still-open 16,
+**The project was renamed from Winnower to Crivo (`CRIVO-1`).** The ID prefix
+switched over with it: existing `WINNOWER-<n>` IDs (1–21, plus the still-open 16,
 17 and 20) keep their prefix forever, but every task claimed from `CRIVO-1` onward
 uses `CRIVO-<n>`. `WINNOWER-22`, the number that would have been next, is retired
 unused rather than reassigned.
@@ -27,9 +27,9 @@ git log --oneline | grep -oE 'CRIVO-[0-9]+' | sort -t- -k2 -n | tail -1
 - **One ID per task, not per commit.** A feature landed over two commits carries
   the same ID in both subjects. A commit closing two tasks names both.
 - Commit subject: `feat: Show each candidate's tags under its thumbnail
-  (WINNOWER-12)` — Conventional Commits, with the ID in parentheses at the end.
+  (CRIVO-12)` — Conventional Commits, with the ID in parentheses at the end.
   See **Commit messages** in `CLAUDE.md`.
-- Branch name: `winnower-12-show-candidate-tags`. The ID prefix is wanted here;
+- Branch name: `crivo-12-show-candidate-tags`. The ID prefix is wanted here;
   the `p1-`/`p2-` priority prefix is banned and a different thing.
 - Moving an item between `TODO.md` and this file never changes its ID.
 
@@ -55,7 +55,6 @@ registry, not a second copy of the backlog.
 
 | ID | Pri | Status | Title |
 | --- | --- | --- | --- |
-| CRIVO-1 | P1 | open | Rename the project from Winnower to Crivo |
 | WINNOWER-16 | P3 | open | Screenshots of the selection UI for the README |
 | WINNOWER-17 | P2 | in progress | Run against the live Pixabay API on Windows, macOS and Linux (Windows done) |
 | WINNOWER-20 | P3 | open | Tidy the tags under each thumbnail: show each once, cap the list |
@@ -64,6 +63,7 @@ registry, not a second copy of the backlog.
 
 | ID | Date | Status | Title | Commit |
 | --- | --- | --- | --- | --- |
+| CRIVO-1 | 2026-09-27 | done | Rename the project from Winnower to Crivo | — |
 | WINNOWER-1 | 2026-09-26 | done | Set up the repo workflow: CLAUDE.md, agents, ledger, changelog | — |
 | WINNOWER-2 | 2026-09-26 | done | Lint commit messages with a commit-msg hook | — |
 | WINNOWER-3 | 2026-09-26 | done | Derive release versions from commit types | — |

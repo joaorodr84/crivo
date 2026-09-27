@@ -3,7 +3,7 @@ requires = ["setuptools>=77", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "winnower"
+name = "crivo"
 # The version is the git tag (CLAUDE.md -> Versions), read by setuptools-scm, so
 # there is no number here to fall out of step with `python -m scripts.release`.
 dynamic = ["version"]
@@ -18,7 +18,7 @@ dependencies = [
 ]
 
 [project.scripts]
-winnower = "winnower.cli:cli"
+crivo = "crivo.cli:cli"
 
 [project.optional-dependencies]
 dev = [
@@ -32,7 +32,7 @@ where = ["src"]
 # The selection page (HTML, CSS, JS) is served from these; without this line an installed
 # wheel would have the server but not the page.
 [tool.setuptools.package-data]
-winnower = ["static/*"]
+crivo = ["static/*"]
 
 [tool.setuptools_scm]
 

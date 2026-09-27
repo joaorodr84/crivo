@@ -11,7 +11,7 @@ person's browser, so it is not open by default:
 - It binds 127.0.0.1 only, on a port the OS picks, so nothing else on the network sees it
   and there is no port to collide with.
 - Every request must carry a random per-run token (in the URL the browser is opened with,
-  then in the `X-Winnower-Token` header). A page on another site can make the browser
+  then in the `X-Crivo-Token` header). A page on another site can make the browser
   send a POST to `localhost:<port>`, but it cannot know the token, and a custom header
   also forces a CORS preflight the server never answers.
 - The `Host` header must be the address the server is bound to. That is what stops DNS
@@ -41,7 +41,7 @@ from urllib.parse import parse_qs, urlsplit
 
 from .selection import SelectionError, SelectionSession
 
-TOKEN_HEADER = "X-Winnower-Token"
+TOKEN_HEADER = "X-Crivo-Token"
 # Room for a pasted list of a few thousand keywords; everything else is a few dozen bytes.
 MAX_BODY = 256 * 1024
 DRAIN_LIMIT = 1024 * 1024  # how much of an oversized body is read and discarded
@@ -57,7 +57,7 @@ CSP = (
 
 
 def _static(name: str) -> bytes:
-    return resources.files("winnower").joinpath("static", name).read_bytes()
+    return resources.files("crivo").joinpath("static", name).read_bytes()
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -100,7 +100,7 @@ class _Handler(BaseHTTPRequestHandler):
         if url.path == "/":
             token = (parse_qs(url.query).get("t") or [None])[0]
             if not self._token_ok(token):
-                return self._error(403, "Open the address Winnower printed, including its token.")
+                return self._error(403, "Open the address Crivo printed, including its token.")
             return self._send(200, _static(INDEX[0]), INDEX[1])
         if url.path in STATIC:
             name, content_type = STATIC[url.path]

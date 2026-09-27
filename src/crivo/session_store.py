@@ -93,7 +93,7 @@ class SessionStore:
             data = json.loads(raw)
             if data["version"] != VERSION:
                 raise SessionError(
-                    f"{self.path} was written by a different version of Winnower "
+                    f"{self.path} was written by a different version of Crivo "
                     f"(format {data['version']}, this one reads {VERSION}). Finish it with "
                     "that version, or start over with --restart."
                 )

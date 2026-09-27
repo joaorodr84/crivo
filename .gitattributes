@@ -5,7 +5,7 @@
 # would not even run there (`sh` rejects a CRLF shebang line).
 * text=auto eol=lf
 
-# Never normalize and never diff as text. Winnower handles images all day, and
+# Never normalize and never diff as text. Crivo handles images all day, and
 # a test fixture or README screenshot corrupted by line-ending conversion is a
 # confusing way to lose an afternoon.
 *.png  binary

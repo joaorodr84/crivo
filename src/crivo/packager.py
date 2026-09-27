@@ -105,7 +105,7 @@ def build_credits(entries: Sequence[Entry], names: Sequence[str], generated: str
         "asks that users be shown where images come from, and so that there is a paper",
         "trail if a question about one of these images comes up later.",
         "",
-        f"Prepared with Winnower {__version__} on {generated}.",
+        f"Prepared with Crivo {__version__} on {generated}.",
         "",
     ]
     for entry, name in zip(entries, names, strict=True):

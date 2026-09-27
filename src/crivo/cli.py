@@ -1,4 +1,4 @@
-"""`winnower run KEYWORDS`: search, pick, download, resize, zip.
+"""`crivo run KEYWORDS`: search, pick, download, resize, zip.
 
 The pipeline is a straight line with one loop back (retry a keyword's search, which lives
 in the selection page), so this module is only wiring: parse the options into `Settings`,
@@ -83,14 +83,14 @@ def _size(text: str) -> tuple[int, int]:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="winnower",
+        prog="crivo",
         description=(
             "Search Pixabay for a list of keywords, pick one image for each in your browser, "
             "and get them back resized to a common size in a zip. Needs your own free Pixabay "
             "API key (https://pixabay.com/api/docs/) in PIXABAY_API_KEY or a .env file."
         ),
     )
-    parser.add_argument("--version", action="version", version=f"winnower {__version__}")
+    parser.add_argument("--version", action="version", version=f"crivo {__version__}")
     commands = parser.add_subparsers(dest="command", required=True, metavar="COMMAND")
     run = commands.add_parser(
         "run", help="search, pick, download, resize and zip", description=run_help()
@@ -164,11 +164,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--restart", action="store_true",
         help="throw away an unfinished saved session and start a new run",
     )  # fmt: skip
-    out.add_argument("-o", "--output", type=Path, metavar="ZIP", help="default winnower.zip")
+    out.add_argument("-o", "--output", type=Path, metavar="ZIP", help="default crivo.zip")
     out.add_argument("--overwrite", action="store_true", help="replace the zip if it exists")
     out.add_argument(
         "--work-dir", type=Path, metavar="DIR",
-        help="search cache and downloaded originals (default .winnower)",
+        help="search cache and downloaded originals (default .crivo)",
     )  # fmt: skip
     out.add_argument(
         "--no-browser", action="store_true", help="print the address instead of opening it"
@@ -273,10 +273,10 @@ def main(
             ),
         )
     except (ConfigError, KeywordError, PackageError, SessionError, SelectionError) as problem:
-        warn(f"winnower: error: {problem}")
+        warn(f"crivo: error: {problem}")
         return EXIT_ERROR
     except KeyboardInterrupt:
-        warn("\nwinnower: interrupted. Searches stay cached for 24 hours and downloaded "
+        warn("\ncrivo: interrupted. Searches stay cached for 24 hours and downloaded "
              "images stay in the work directory, so a second run picks up cheaply.")  # fmt: skip
         return EXIT_INTERRUPTED
 
@@ -341,12 +341,12 @@ def _run(args, env, dotenv, stdin, say, warn, deps: Deps) -> int:
         return _pipeline(args, settings, store, saved, keywords, say, warn, deps)
     except KeyboardInterrupt:
         hint = (
-            "Your picks are saved: continue with `winnower run --resume`."
+            "Your picks are saved: continue with `crivo run --resume`."
             if saved is not None or store.writes  # not just any file left by an earlier run
             else "Nothing had been saved yet."
         )
         warn(
-            f"\nwinnower: interrupted. {hint} Searches stay cached for 24 hours and "
+            f"\ncrivo: interrupted. {hint} Searches stay cached for 24 hours and "
             "downloaded images stay in the work directory."
         )
         return EXIT_INTERRUPTED
