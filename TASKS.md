@@ -57,13 +57,13 @@ registry, not a second copy of the backlog.
 | --- | --- | --- | --- |
 | WINNOWER-16 | P3 | open | Screenshots of the selection UI for the README |
 | WINNOWER-17 | P2 | in progress | Run against the live Pixabay API on Windows, macOS and Linux (Windows done) |
-| WINNOWER-20 | P3 | open | Tidy the tags under each thumbnail: show each once, cap the list |
 
 ## Done
 
 | ID | Date | Status | Title | Commit |
 | --- | --- | --- | --- | --- |
 | CRIVO-1 | 2026-09-27 | done | Rename the project from Winnower to Crivo | — |
+| WINNOWER-20 | 2026-09-27 | done | Tidy the tags under each thumbnail: show each once, cap the list | — |
 | WINNOWER-1 | 2026-09-26 | done | Set up the repo workflow: CLAUDE.md, agents, ledger, changelog | — |
 | WINNOWER-2 | 2026-09-26 | done | Lint commit messages with a commit-msg hook | — |
 | WINNOWER-3 | 2026-09-26 | done | Derive release versions from commit types | — |

@@ -7,7 +7,7 @@ from fakes import hit
 from crivo.keywords import Keyword
 from crivo.pixabay_client import SearchResult, parse_response
 from crivo.search_runner import Outcome, Status
-from crivo.selection import SelectionError, SelectionSession
+from crivo.selection import SelectionError, SelectionSession, _display_tags
 
 
 def result(ids, page=1, total_hits=100, per_page=3):
@@ -102,6 +102,18 @@ class TestSkipping:
         assert not kw(s.snapshot(), "apple")["done"]
 
 
+class TestDisplayTags:
+    def test_drops_case_insensitive_repeats_keeping_first_spelling(self):
+        assert _display_tags(("Apple", "apple", "APPLE", "fruit")) == ["Apple", "fruit"]
+
+    def test_caps_at_eight_by_default(self):
+        tags = tuple(f"tag{i}" for i in range(20))
+        assert _display_tags(tags) == [f"tag{i}" for i in range(8)]
+
+    def test_empty_stays_empty(self):
+        assert _display_tags(()) == []
+
+
 class TestSnapshot:
     def test_counts_done_and_picks(self):
         s = session(
@@ -121,6 +133,7 @@ class TestSnapshot:
         c = kw(session(found("apple", [1])).snapshot(), "apple")["candidates"][0]
         assert c["user"] == "user1" and c["page_url"].startswith("https://pixabay.com/")
         assert c["webformat_url"] and c["preview_url"] and c["tags"]
+        assert c["display_tags"]
 
     def test_states_of_keywords_that_have_no_candidates(self):
         s = session(empty("e"), failed("f", "Boom."), pending("p"))

@@ -26,11 +26,6 @@ Each lands as its own branch and commit.
 
 ## Later
 
-- **[P3] WINNOWER-20 — Tidy the tags under each thumbnail.** Found in the live
-  run: real Pixabay tags repeat and run long ("apple, apple, apple, apple, red,
-  fruit, ..." to twenty words), which makes the cards uneven and noisy. Show each
-  tag once (case-insensitively) and cap the list at about eight; the full list can
-  stay in the image's alt text. Display only; `Candidate.tags` is unchanged.
 - **[P3] WINNOWER-16 — README screenshots.** The spec asks for a couple of
   screenshots or GIFs of the selection UI. Needs a run against real results, so
   it waits on a key; fixtures generated in code would show a UI with nothing on

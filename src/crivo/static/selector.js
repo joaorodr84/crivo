@@ -95,7 +95,7 @@ function card(k, c) {
     el("figcaption", {},
       el("span", { class: "by" }, "by " + (c.user || "unknown")),
       link,
-      c.tags.length ? el("span", { class: "tags" }, c.tags.join(", ")) : null));
+      c.display_tags.length ? el("span", { class: "tags" }, c.display_tags.join(", ")) : null));
 }
 
 function chip(k) {

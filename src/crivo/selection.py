@@ -80,12 +80,33 @@ class _Entry:
         return bool(self.picked) or self.skipped
 
 
+def _display_tags(tags: tuple[str, ...], limit: int = 8) -> list[str]:
+    """Unique tags (case-insensitively), in first-seen order, capped at `limit`.
+
+    WINNOWER-20: real Pixabay tags repeat and run long ("apple, apple, apple,
+    apple, red, fruit, ..." to twenty words), which made cards uneven and noisy.
+    `tags` (the full list, for alt text) is unchanged; this is what the caption shows.
+    """
+    seen: set[str] = set()
+    result: list[str] = []
+    for tag in tags:
+        key = tag.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(tag)
+        if len(result) >= limit:
+            break
+    return result
+
+
 def _candidate_json(c: Candidate) -> dict[str, Any]:
     return {
         "id": c.id,
         "page_url": c.page_url,
         "user": c.user,
         "tags": list(c.tags),
+        "display_tags": _display_tags(c.tags),
         "preview_url": c.preview_url,
         "webformat_url": c.webformat_url,
         "width": c.width,
