@@ -3,7 +3,7 @@
 Every task carries an ID of the form `WINNOWER-<n>`. IDs are assigned once, never
 reused, and never renumbered.
 
-**Next ID to assign: `WINNOWER-20`**
+**Next ID to assign: `WINNOWER-21`**
 
 If this file and history ever disagree, history wins:
 
@@ -50,7 +50,8 @@ registry, not a second copy of the backlog.
 | --- | --- | --- | --- |
 | WINNOWER-15 | P3 | open | Type or paste keywords into a text box in the UI (rest of FR1) |
 | WINNOWER-16 | P3 | open | Screenshots of the selection UI for the README |
-| WINNOWER-17 | P2 | open | Run against the live Pixabay API on Windows, macOS and Linux |
+| WINNOWER-17 | P2 | in progress | Run against the live Pixabay API on Windows, macOS and Linux (Windows done) |
+| WINNOWER-20 | P3 | open | Tidy the tags under each thumbnail: show each once, cap the list |
 
 ## Done
 

@@ -195,9 +195,9 @@ The repository contains no Pixabay images and never will; please do not commit a
 
 Winnower is at version 0.x. The whole pipeline works and is covered by automated tests on
 Windows, macOS and Linux, but those tests use a simulated Pixabay and never touch the network.
-A full run against the live API on all three systems has not yet been done, so expect a rough
-edge or two in how it meets the real service. Bug reports with the message Winnower printed are
-welcome.
+It has been run against the live API on Windows, where it found and fixed a real bug that
+no simulated test could. The same run has not yet been made on macOS or Linux, so expect a
+rough edge or two there. Bug reports with the message Winnower printed are welcome.
 
 ## Contributing
 

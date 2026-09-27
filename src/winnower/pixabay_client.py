@@ -21,9 +21,12 @@ path the spec's own non-functional requirements name:
    report, shares the key. CLAUDE.md -> Pixabay rules forbids exactly this.
 4. The query string is built by hand and is wrong two ways. `min_width=None` is sent
    literally (the library's own default for `searchImage`), and only spaces are escaped,
-   so a keyword like `rock&roll=1` splits into a second, injected parameter. The API's
-   `safesearch` flag is sent as `safe_search`, which is not the name its documentation
-   uses (unverified against the live API until WINNOWER-17).
+   so a keyword like `rock&roll=1` splits into a second, injected parameter. And the
+   API's `safesearch` flag is sent as `safe_search`, which the API silently ignores:
+   checked against the live API on 2026-09-27, `q=flower` reports 318,769 results
+   with no flag, 317,969 with `safesearch=true`, and 318,769 again with `safe_search=true`
+   or `True`. A person who asked for safe results would get unfiltered ones, without an
+   error to say so.
 
 It also never reads an `X-RateLimit-*` header, which the spec asks for, and it `print`s
 to stdout from inside library code.
@@ -66,7 +69,12 @@ oldest request has left in the window. It also honours `X-RateLimit-Remaining` a
 `X-RateLimit-Reset` (another program on the same key can have used the budget) and a
 429's own reset time. `RATE_MARGIN` widens the window by a second because our timestamp
 is taken before the request leaves and Pixabay's when it arrives; the size of that skew
-has not been measured, so it is a guess to be checked in WINNOWER-17.
+has not been measured, so it is a guess. Measuring it means running into the limit on
+purpose, which sits badly with a tool meant to be human-paced, so it stays a guess until a
+real 429 turns up. What the live API was seen to send (2026-09-27, Windows): every search
+response carries `X-RateLimit-Limit: 100`, `X-RateLimit-Remaining` counting down by one
+per request, and `X-RateLimit-Reset: 60` (seconds), which is how `Throttle.observe` reads
+them. The image downloads carry no rate-limit headers.
 
 The cache is one file per query, named by a hash of the query *without* the key, so a
 corrupt file costs one search and a write is a single atomic rename.
@@ -128,9 +136,11 @@ class Rejected(PixabayError):
         self.status = status
         # True when the key itself is the problem. Every further keyword would fail the
         # same way, so the runner stops instead of spending a request on each. Pixabay
-        # does not document how a bad key is signalled; 401 and 403 are the usual ones
-        # and a body that mentions the key is the fallback. To be confirmed in
-        # WINNOWER-17 against the live API.
+        # does not document how a bad key is signalled. Seen live (2026-09-27): HTTP 400,
+        # content type text/html, body `[ERROR 400] Invalid or missing API key`. So it is
+        # the body that identifies it, not the status, and a 400 for any other reason (a
+        # bad parameter) must not be taken for it: the word "key" is the test. 401 and 403
+        # are kept as cheap insurance and have never been observed.
         self.auth = auth
 
 

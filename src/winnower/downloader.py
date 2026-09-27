@@ -42,8 +42,11 @@ Downloads are sequential and are not counted against the API's 100-per-minute bu
 which is for the API and not the CDN, but they are one at a time and only for images a
 person has picked, which is the human pace the API terms ask for.
 
-Whether Pixabay's CDN serves these requests to Winnower's User-Agent has not been
-checked against the live service. If it answers 403, that is what WINNOWER-17 is for.
+Checked against the live service on 2026-09-27 (Windows): `largeImageURL` for a standard
+account is `https://pixabay.com/get/...`, and it answers 200 to Winnower's User-Agent with
+`Content-Length` and `image/jpeg` or `image/png` (vector results are served as PNG), 160 to
+400 KB each. Whether it still does from other networks, or on macOS and Linux, has not been
+seen; a 403 there would be reported as it is and not retried.
 """
 
 from __future__ import annotations

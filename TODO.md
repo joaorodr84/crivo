@@ -28,12 +28,22 @@ Each lands as its own branch and commit.
   typed list in a text box. The CLI accepts stdin and `-k`, which covers the
   paste case, but a UI start page that takes the list needs the search to move
   behind the server so the page can be open while it runs.
+- **[P3] WINNOWER-20 — Tidy the tags under each thumbnail.** Found in the live
+  run: real Pixabay tags repeat and run long ("apple, apple, apple, apple, red,
+  fruit, ..." to twenty words), which makes the cards uneven and noisy. Show each
+  tag once (case-insensitively) and cap the list at about eight; the full list can
+  stay in the image's alt text. Display only; `Candidate.tags` is unchanged.
 - **[P3] WINNOWER-16 — README screenshots.** The spec asks for a couple of
   screenshots or GIFs of the selection UI. Needs a run against real results, so
   it waits on a key; fixtures generated in code would show a UI with nothing on
   it that a user recognises.
-- **[P2] WINNOWER-17 — Live run on three OSes.** No test hits the real API, so
-  nothing yet proves the client against Pixabay's actual responses and headers,
-  or that the CDN serves downloads to Winnower's User-Agent. Do one small real
-  run on Windows, macOS and Linux and record what was seen. This is the
-  `1.0.0` condition.
+- **[P2] WINNOWER-17 — Live run on three OSes.** No test hits the real API, so a
+  small real run is what proves the client against Pixabay's actual responses.
+  **Windows is done (2026-09-27)**: headers, filters, pages, bad-key signalling,
+  CDN downloads under Winnower's User-Agent and real thumbnails in the page were
+  all checked, and it found the crop bug fixed as WINNOWER-19. What was seen is
+  recorded in the comments where each finding settles a decision. **Still to do:**
+  the same small run on macOS and Linux (`winnower run -k apple -k lighthouse
+  -n 3 --work-dir <somewhere outside the repo>`, picking in the browser), and
+  never provoked so far: a real 429 (it means using 100 requests inside a
+  minute) and so the `RATE_MARGIN` guess. This is the `1.0.0` condition.
