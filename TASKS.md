@@ -56,7 +56,7 @@ registry, not a second copy of the backlog.
 | ID | Pri | Status | Title |
 | --- | --- | --- | --- |
 | WINNOWER-16 | P3 | open | Screenshots of the selection UI for the README |
-| WINNOWER-17 | P2 | in progress | Run against the live Pixabay API on Windows, macOS and Linux (Windows done) |
+| WINNOWER-17 | P2 | in progress | Run against the live Pixabay API on Windows, macOS and Linux (Windows and a real 429 done) |
 
 ## Done
 

@@ -76,6 +76,20 @@ response carries `X-RateLimit-Limit: 100`, `X-RateLimit-Remaining` counting down
 per request, and `X-RateLimit-Reset: 60` (seconds), which is how `Throttle.observe` reads
 them. The image downloads carry no rate-limit headers.
 
+A real 429 was provoked on 2026-09-27 (WINNOWER-17): two independent `PixabayClient`s,
+each with its own `Throttle` and unaware of the other, shared one key and fired 120
+distinct-query requests between them inside one window -- the "another program on the
+same key" case this module's design already accounts for. 56 of 164 raw HTTP requests
+came back 429, and every one of those 56 carried `X-RateLimit-Limit/Remaining/Reset` as
+absent, not just zero -- so "a 429's own reset time", above, is never actually there to
+read; `reset or 0` always falls through to the plain exponential backoff in practice, and
+that is what was observed recovering: 12 of the 120 calls exhausted all 4 attempts and
+surfaced as a `RateLimited` (`retry_after=8.0`, matching `_delay(3)`), the other 108
+succeeded on a retry. Nothing crashed. This does not touch `RATE_MARGIN` -- using two
+Throttles was the point, to get a real 429 without one client ever waiting on itself, so
+it says nothing about the single-instance clock skew the margin guesses at, which is
+still unmeasured.
+
 The cache is one file per query, named by a hash of the query *without* the key, so a
 corrupt file costs one search and a write is a single atomic rename.
 """

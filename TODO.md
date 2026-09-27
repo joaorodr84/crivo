@@ -35,8 +35,11 @@ Each lands as its own branch and commit.
   **Windows is done (2026-09-27)**: headers, filters, pages, bad-key signalling,
   CDN downloads under Winnower's User-Agent and real thumbnails in the page were
   all checked, and it found the crop bug fixed as WINNOWER-19. What was seen is
-  recorded in the comments where each finding settles a decision. **Still to do:**
-  the same small run on macOS and Linux (`crivo run -k apple -k lighthouse
-  -n 3 --work-dir <somewhere outside the repo>`, picking in the browser), and
-  never provoked so far: a real 429 (it means using 100 requests inside a
-  minute) and so the `RATE_MARGIN` guess. This is the `1.0.0` condition.
+  recorded in the comments where each finding settles a decision. **The real 429
+  is done too (2026-09-27)**: see the comment above `RATE_MARGIN` in
+  `pixabay_client.py` for what provoking one showed — nothing crashed, and it
+  turned up that a 429 carries none of the rate-limit headers a 200 does.
+  **Still to do:** the same small run on macOS and Linux (`crivo run -k apple
+  -k lighthouse -n 3 --work-dir <somewhere outside the repo>`, picking in the
+  browser) — no genuine Linux or macOS box has been reachable to run it from
+  yet. This is the `1.0.0` condition.
