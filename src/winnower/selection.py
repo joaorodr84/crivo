@@ -18,6 +18,10 @@ Rules a person would otherwise trip over:
   with the reason in `notice`; only a keyword with nothing yet shows the failure as its
   state. Losing ten candidates and a pick because a page-two request hit a 429 would be
   the tool punishing the person for using it.
+- Every change is reported to `on_change` with the whole state, which is how the session is
+  saved (`session_store.py`) after each click. Saving *everything* each time, rather than
+  appending what changed, is what keeps a crash between two clicks from leaving a file that
+  is half of one state and half of another; a hundred keywords is a few hundred kilobytes.
 - The search runs *outside* the lock. It can wait a minute on the rate limit, and the
   page must still be able to read the state and pick in other keywords meanwhile.
 """
@@ -90,8 +94,10 @@ class SelectionSession:
         *,
         multiple: bool = False,
         stopped: str | None = None,
+        on_change: Callable[[dict[str, Any]], None] | None = None,
     ):
         self._search = search
+        self.on_change = on_change
         self._multiple = multiple
         self._stopped = stopped  # why the search run ended early, shown as a banner
         self._lock = threading.RLock()
@@ -134,6 +140,7 @@ class SelectionSession:
                 entry.skipped = False
             elif image_id in entry.picked:
                 entry.picked.remove(image_id)
+            self._changed()
 
     def skip(self, label: str, skipped: bool = True) -> None:
         with self._lock:
@@ -141,6 +148,7 @@ class SelectionSession:
             entry.skipped = skipped
             if skipped:
                 entry.picked.clear()
+            self._changed()
 
     def retry(self, label: str, term: str | None = None, next_page: bool = False) -> None:
         """Search again: the same query (`term` None), a new `term`, or the `next_page`."""
@@ -165,6 +173,7 @@ class SelectionSession:
         with self._lock:
             entry.busy = False
             self._apply(entry, outcome, query, next_page)
+            self._changed()
 
     def _apply(self, entry: _Entry, outcome: Outcome, query: str, next_page: bool) -> None:
         entry.notice = None
@@ -189,6 +198,70 @@ class SelectionSession:
         entry.candidates, entry.page, entry.has_more = fresh.candidates, fresh.page, fresh.has_more
         entry.picked.clear()
         entry.skipped = False
+
+    def _changed(self) -> None:
+        if self.on_change:
+            self.on_change(self.export())  # called with the lock held: one state at a time
+
+    def export(self) -> dict[str, Any]:
+        """Everything needed to rebuild this session with `from_state`. JSON-safe."""
+        with self._lock:
+            return {
+                "multiple": self._multiple,
+                "stopped": self._stopped,
+                "finished": self._finished.is_set(),
+                "entries": [
+                    {
+                        "keyword": {"label": e.keyword.label, "term": e.keyword.term},
+                        "query": e.query,
+                        "status": e.status.value,
+                        "candidates": [c.to_dict() for c in e.candidates],
+                        "page": e.page,
+                        "has_more": e.has_more,
+                        "error": e.error,
+                        "notice": e.notice,
+                        "picked": list(e.picked),
+                        "skipped": e.skipped,
+                    }
+                    for e in self._entries.values()
+                ],
+            }
+
+    @classmethod
+    def from_state(
+        cls,
+        state: dict[str, Any],
+        search: SearchFn | None = None,
+        *,
+        multiple: bool = False,
+    ) -> SelectionSession:
+        """Rebuild a session from `export()`. Raises SelectionError if it is not one."""
+        try:
+            session = cls([], search, multiple=multiple or bool(state["multiple"]),
+                          stopped=state["stopped"])  # fmt: skip
+            for item in state["entries"]:
+                candidates = [Candidate.from_dict(c) for c in item["candidates"]]
+                picked = [int(i) for i in item["picked"]]
+                if not {c.id for c in candidates} >= set(picked):
+                    raise ValueError("a pick that is not one of the candidates")
+                label = str(item["keyword"]["label"])
+                session._entries[label] = _Entry(
+                    keyword=Keyword(label, str(item["keyword"]["term"])),
+                    query=str(item["query"]),
+                    status=Status(item["status"]),
+                    candidates=candidates,
+                    page=int(item["page"]),
+                    has_more=bool(item["has_more"]),
+                    error=item["error"],
+                    notice=item["notice"],
+                    picked=picked,
+                    skipped=bool(item["skipped"]),
+                )
+            if state["finished"]:
+                session._finished.set()
+        except (KeyError, TypeError, ValueError, AttributeError) as err:
+            raise SelectionError(f"The saved session is not readable ({err!r}).") from None
+        return session
 
     def snapshot(self) -> dict[str, Any]:
         with self._lock:
@@ -226,6 +299,7 @@ class SelectionSession:
             if any(e.busy for e in self._entries.values()):
                 raise SelectionError("A search is still running; wait for it to finish.")
             self._finished.set()
+            self._changed()
 
     def wait(self, timeout: float | None = None) -> bool:
         """Block until the person has finished; True if they did."""

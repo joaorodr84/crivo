@@ -1,6 +1,7 @@
 """The pipeline end to end: real stages, fake network, and a fake person in place of the page."""
 
 import io
+import json
 import zipfile
 
 import pytest
@@ -70,6 +71,7 @@ class Run:
         self.tmp = tmp_path
         self.out, self.err = io.StringIO(), io.StringIO()
         self.zip = tmp_path / "out.zip"
+        self.clock = FakeClock()  # one timeline across runs, so a session can grow old
 
     def keywords(self, text, name="k.txt"):
         path = self.tmp / name
@@ -77,8 +79,8 @@ class Run:
         return str(path)
 
     def __call__(self, *argv, network=None, serve_fn=None, env=None, stdin=None):
+        self.out, self.err = io.StringIO(), io.StringIO()  # this run's output only
         self.network = network or Network()
-        self.clock = FakeClock()
         args = ["run", *argv]
         if "-o" not in args:
             args += ["-o", str(self.zip)]
@@ -94,6 +96,7 @@ class Run:
             serve_fn=serve_fn or picker("apple", "pear"),
             sleep=self.clock.sleep,
             clock=self.clock,
+            wall=self.clock,
         )
         return self.code
 
@@ -321,3 +324,197 @@ def test_version(capsys):
         main(["--version"])
     assert caught.value.code == 0
     assert __version__ in capsys.readouterr().out
+
+
+def interrupt_after_picking(*labels):
+    """A person who picks some images and then closes the terminal."""
+
+    def serve_fn(session, *, open_browser, announce):
+        for keyword in session.snapshot()["keywords"]:
+            if keyword["label"] in labels:
+                session.pick(keyword["label"], keyword["candidates"][0]["id"])
+        raise KeyboardInterrupt
+
+    return serve_fn
+
+
+def not_called(session, **kwargs):
+    raise AssertionError("the page should not have been opened")
+
+
+class TestSessions:
+    def interrupted(self, run, text="apple\npear\n"):
+        path = run.keywords(text)
+        assert run(path, serve_fn=interrupt_after_picking("apple")) == EXIT_INTERRUPTED
+        return path
+
+    def test_an_interrupted_run_saves_its_picks_and_says_how_to_continue(self, run):
+        self.interrupted(run)
+        assert "--resume" in run.err.getvalue() and "picks are saved" in run.err.getvalue()
+        assert (run.tmp / "work" / "session.json").is_file()
+        assert not run.zip.exists()
+
+    def test_resume_picks_up_where_it_stopped_without_spending_a_request(self, run):
+        self.interrupted(run)
+        code = run("--resume", serve_fn=picker("pear"))
+        assert code == EXIT_OK
+        assert run.network.api_calls == []
+        assert run.names() == ["apple.png", "pear.png", "CREDITS.txt"]
+        assert "Resuming the saved session: 1 of 2 keywords done" in run.out.getvalue()
+
+    def test_the_page_comes_back_as_it_was_left(self, run):
+        self.interrupted(run)
+        seen = []
+        run("--resume", serve_fn=picker("pear", seen=seen))
+        apple = next(k for k in seen[0]["snapshot"]["keywords"] if k["label"] == "apple")
+        assert len(apple["picked"]) == 1 and apple["done"]
+
+    def test_a_new_run_will_not_silently_replace_an_unfinished_session(self, run):
+        path = self.interrupted(run)
+        assert run(path) == EXIT_ERROR
+        message = run.err.getvalue()
+        assert "unfinished session" in message and "1 of 2 keywords done" in message
+        assert "--resume" in message and "--restart" in message
+        assert run.network.calls == []  # refused before a request was spent
+
+    def test_restart_throws_it_away_and_starts_over(self, run):
+        path = self.interrupted(run)
+        assert run(path, "--restart", serve_fn=picker("pear")) == EXIT_OK
+        assert run.names() == ["pear.png", "CREDITS.txt"]  # apple's old pick is gone
+
+    def test_a_completed_session_does_not_block_the_next_run(self, run):
+        path = run.keywords("apple\n")
+        assert run(path, serve_fn=picker("apple")) == EXIT_OK
+        saved = json.loads((run.tmp / "work" / "session.json").read_text(encoding="utf-8"))
+        assert saved["completed"] is True
+        assert run(path, "--overwrite", serve_fn=picker("apple")) == EXIT_OK
+
+    def test_resuming_a_completed_session_is_refused(self, run):
+        run(run.keywords("apple\n"), serve_fn=picker("apple"))
+        assert run("--resume", "--overwrite") == EXIT_ERROR
+        assert "already complete" in run.err.getvalue()
+
+    def test_resume_with_nothing_saved(self, run):
+        assert run("--resume") == EXIT_ERROR
+        assert "no saved session" in run.err.getvalue()
+
+    def test_resume_takes_its_keywords_from_the_session_not_the_command_line(self, run):
+        path = self.interrupted(run)
+        assert run(path, "--resume") == EXIT_ERROR
+        assert "reads the keywords from the saved session" in run.err.getvalue()
+        assert run("-k", "kiwi", "--resume") == EXIT_ERROR
+
+    def test_resume_and_restart_together_contradict(self, run):
+        assert run("--resume", "--restart") == EXIT_ERROR
+        assert "contradict" in run.err.getvalue()
+
+    def test_a_finished_session_whose_zip_failed_goes_straight_to_the_download(self, run):
+        path = run.keywords("apple\n")
+        broken = Network({"/get/": FakeResponse(403)})
+        assert run(path, network=broken, serve_fn=picker("apple")) == EXIT_ERROR
+        assert not run.zip.exists()
+        # The network is back. Nothing should need picking again.
+        assert run("--resume", serve_fn=not_called) == EXIT_OK
+        assert "going straight to the download" in run.out.getvalue()
+        assert run.names() == ["apple.png", "CREDITS.txt"]
+
+    def test_a_session_over_a_day_old_still_resumes_with_a_warning(self, run):
+        self.interrupted(run)
+        run.clock.advance(2 * 86400)
+        assert run("--resume", serve_fn=picker("pear")) == EXIT_OK
+        assert "over a day old" in run.err.getvalue()
+
+    def test_a_session_from_this_morning_does_not_warn(self, run):
+        self.interrupted(run)
+        run.clock.advance(3600)
+        run("--resume", serve_fn=picker("pear"))
+        assert "over a day old" not in run.err.getvalue()
+
+    def test_retries_made_on_the_page_survive_a_resume(self, run):
+        path = run.keywords("apple\n")
+
+        def retry_then_quit(session, *, open_browser, announce):
+            session.retry("apple", term="apple pie")
+            raise KeyboardInterrupt
+
+        assert run(path, serve_fn=retry_then_quit) == EXIT_INTERRUPTED
+        seen = []
+        run("--resume", serve_fn=picker("apple", seen=seen))
+        assert seen[0]["snapshot"]["keywords"][0]["query"] == "apple pie"
+
+    def test_a_damaged_session_file_is_an_error_with_a_way_out(self, run):
+        path = self.interrupted(run)
+        (run.tmp / "work" / "session.json").write_text("{ not json", encoding="utf-8")
+        assert run("--resume") == EXIT_ERROR
+        assert "--restart" in run.err.getvalue()
+        assert run(path, "--restart", serve_fn=picker("apple")) == EXIT_OK
+
+    def test_the_session_file_never_holds_the_api_key(self, run):
+        self.interrupted(run)
+        text = (run.tmp / "work" / "session.json").read_text(encoding="utf-8")
+        assert KEY not in text
+
+    def test_ctrl_c_before_anything_is_saved_says_so(self, run):
+        network = Network({"apple": KeyboardInterrupt()})
+        assert run(run.keywords("apple\n"), network=network) == EXIT_INTERRUPTED
+        assert "Nothing had been saved" in run.err.getvalue()
+
+    def test_a_session_that_cannot_be_saved_does_not_stop_the_run(self, run, monkeypatch):
+        def failing_save(self, state, completed=False):
+            self.error = "disk full"
+
+        monkeypatch.setattr("winnower.session_store.SessionStore.save", failing_save)
+        assert run(run.keywords("apple\n"), serve_fn=picker("apple")) == EXIT_OK
+        assert "Could not save the session file (disk full)" in run.err.getvalue()
+
+
+class TestSessionEdges:
+    def quit_at_once(self, session, *, open_browser, announce):
+        raise KeyboardInterrupt
+
+    def test_closing_the_page_before_the_first_click_still_keeps_the_search(self, run):
+        """The search is the expensive part; it is saved before the page opens."""
+        path = run.keywords("apple\npear\n")
+        assert run(path, serve_fn=self.quit_at_once) == EXIT_INTERRUPTED
+        assert (run.tmp / "work" / "session.json").is_file()
+        assert "picks are saved" in run.err.getvalue()
+        assert run("--resume", serve_fn=picker("apple", "pear")) == EXIT_OK
+        assert run.network.api_calls == []
+
+    def test_restart_forgets_the_old_session_even_if_the_new_run_is_cut_short(self, run):
+        path = run.keywords("apple\npear\n")
+        run(path, serve_fn=interrupt_after_picking("apple"))
+        # A keyword that is not in the 24 h cache, so the search really is attempted.
+        fresh = run.keywords("kiwi\n", "fresh.txt")
+        cut_short = Network({"kiwi": KeyboardInterrupt()})
+        assert run(fresh, "--restart", network=cut_short) == EXIT_INTERRUPTED
+        assert not (run.tmp / "work" / "session.json").exists()
+        assert "Nothing had been saved" in run.err.getvalue()
+
+    def test_restart_also_clears_a_damaged_file_if_the_new_run_is_cut_short(self, run):
+        path = run.keywords("apple\n")
+        session_file = run.tmp / "work" / "session.json"
+        session_file.parent.mkdir(parents=True)
+        session_file.write_text("{ not json", encoding="utf-8")
+        cut_short = Network({"apple": KeyboardInterrupt()})  # nothing cached in a fresh dir
+        assert run(path, "--restart", network=cut_short) == EXIT_INTERRUPTED
+        assert not session_file.exists()
+
+    def test_ctrl_c_does_not_claim_picks_are_saved_because_of_an_earlier_runs_file(self, run):
+        run(run.keywords("apple\n"), serve_fn=picker("apple"))  # leaves a completed session
+        fresh = run.keywords("kiwi\n", "fresh.txt")
+        network = Network({"kiwi": KeyboardInterrupt()})
+        assert run(fresh, "--overwrite", network=network) == EXIT_INTERRUPTED
+        assert "Nothing had been saved" in run.err.getvalue()
+        assert "picks are saved" not in run.err.getvalue()
+
+    def test_a_session_that_is_json_but_makes_no_sense_points_at_restart_too(self, run):
+        path = run.keywords("apple\npear\n")
+        run(path, serve_fn=interrupt_after_picking("apple"))
+        session_file = run.tmp / "work" / "session.json"
+        saved = json.loads(session_file.read_text(encoding="utf-8"))
+        saved["state"]["entries"][0]["picked"] = [999999]  # not one of its candidates
+        session_file.write_text(json.dumps(saved), encoding="utf-8")
+        assert run("--resume") == EXIT_ERROR
+        assert "cannot be used" in run.err.getvalue() and "--restart" in run.err.getvalue()
+        assert run(path, "--restart", serve_fn=picker("apple")) == EXIT_OK

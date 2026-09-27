@@ -1,3 +1,4 @@
+import json
 import threading
 
 import pytest
@@ -288,3 +289,102 @@ class TestFinish:
         s.retry("a", term="green apple")
         s.pick("a", 8)
         assert s.selections()[0].query == "green apple"
+
+
+class TestExportAndRestore:
+    def busy_session(self):
+        s = session(found("a", [1, 2, 3]), empty("e"), failed("f", "Boom."), pending("p"),
+                    found("b", [4, 5, 6]), multiple=True, stopped="paused")  # fmt: skip
+        s.pick("a", 2)
+        s.pick("a", 3)
+        s.skip("b")
+        return s
+
+    def test_a_restored_session_is_indistinguishable(self):
+        original = self.busy_session()
+        restored = SelectionSession.from_state(json.loads(json.dumps(original.export())))
+        assert restored.snapshot() == original.snapshot()
+        assert [s.candidates for s in restored.selections()] == [
+            s.candidates for s in original.selections()
+        ]
+
+    def test_the_export_is_plain_json(self):
+        json.dumps(self.busy_session().export())
+
+    def test_busy_is_not_carried_over(self):
+        s = session(found("a", [1, 2, 3]))
+        s._entries["a"].busy = True
+        restored = SelectionSession.from_state(s.export())
+        assert not kw(restored.snapshot(), "a")["busy"]
+
+    def test_a_finished_session_stays_finished(self):
+        s = session(found("a", [1, 2, 3]))
+        s.pick("a", 1)
+        s.finish()
+        assert SelectionSession.from_state(s.export()).finished
+
+    def test_a_restored_session_can_search_again(self):
+        search = lambda k, q, p: found("a", [7, 8, 9], query=q)  # noqa: E731
+        restored = SelectionSession.from_state(session(found("a", [1, 2, 3])).export(), search)
+        restored.retry("a", term="green")
+        assert kw(restored.snapshot(), "a")["query"] == "green"
+
+    def test_multiple_survives_and_can_be_turned_on_at_resume(self):
+        saved = session(found("a", [1, 2, 3]), multiple=True).export()
+        assert SelectionSession.from_state(saved).snapshot()["multiple"]
+        plain = session(found("a", [1, 2, 3])).export()
+        assert SelectionSession.from_state(plain, multiple=True).snapshot()["multiple"]
+
+    @pytest.mark.parametrize(
+        "damage",
+        [
+            lambda s: s.pop("entries"),
+            lambda s: s["entries"][0].pop("candidates"),
+            lambda s: s["entries"][0].update(status="bogus"),
+            lambda s: s["entries"][0].update(picked=[99]),  # not one of the candidates
+            lambda s: s["entries"][0]["candidates"][0].pop("id"),
+            lambda s: s.update(entries="nope"),
+        ],
+    )
+    def test_a_state_that_does_not_fit_is_refused_with_a_reason(self, damage):
+        state = json.loads(json.dumps(session(found("a", [1, 2, 3])).export()))
+        damage(state)
+        with pytest.raises(SelectionError, match="not readable"):
+            SelectionSession.from_state(state)
+
+
+class TestOnChange:
+    def watched(self, *outcomes, search=None):
+        seen = []
+        s = session(*outcomes, search=search)
+        s.on_change = seen.append
+        return s, seen
+
+    def test_every_kind_of_change_is_reported_with_the_whole_state(self):
+        search = lambda k, q, p: found("a", [7, 8, 9], query=q)  # noqa: E731
+        s, seen = self.watched(found("a", [1, 2, 3]), search=search)
+        s.pick("a", 1)
+        s.skip("a")
+        s.retry("a", term="green")
+        s.pick("a", 8)
+        s.finish()
+        assert len(seen) == 5
+        assert seen[0]["entries"][0]["picked"] == [1]
+        assert seen[1]["entries"][0]["skipped"] is True
+        assert seen[2]["entries"][0]["query"] == "green"
+        assert seen[3]["entries"][0]["picked"] == [8]
+        assert seen[4]["finished"] is True
+
+    def test_a_refused_request_is_not_a_change(self):
+        s, seen = self.watched(found("a", [1, 2, 3]))
+        with pytest.raises(SelectionError):
+            s.pick("a", 99)
+        with pytest.raises(SelectionError):
+            s.finish()
+        assert seen == []
+
+    def test_a_failed_retry_that_changes_only_the_notice_is_still_saved(self):
+        search = lambda k, q, p: failed("a", "Rate limited.")  # noqa: E731
+        s, seen = self.watched(found("a", [1, 2, 3]), search=search)
+        s.retry("a", next_page=True)
+        assert seen[-1]["entries"][0]["notice"] == "Rate limited."

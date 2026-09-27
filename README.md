@@ -109,8 +109,31 @@ names, so a label repeated in a different case is dropped and reported.
 | `--image-type`, `--orientation`, `--category`, `--colors`, `--min-width`, `--min-height`, `--safesearch`, `--editors-choice`, `--order`, `--lang` | Pixabay's own search filters. |
 | `--multiple` | Allow more than one image per keyword (`apple.png`, `apple-2.png`, ...). |
 | `-o`, `--output ZIP` | Where to write the zip (default `winnower.zip`). It is not replaced unless you pass `--overwrite`. |
-| `--work-dir DIR` | Search cache and downloaded originals (default `.winnower`). |
+| `--work-dir DIR` | Search cache, downloaded originals and the saved session (default `.winnower`). |
+| `--resume` / `--restart` | Continue the saved session, or throw an unfinished one away and start over. |
 | `--no-browser` | Print the address instead of opening it. |
+
+### Pausing and resuming
+
+Your picks are saved as you make them, in `session.json` inside the work directory (`.winnower`
+by default). Close the terminal, press Ctrl-C, or shut the laptop, and carry on later:
+
+```console
+$ winnower run --resume
+```
+
+Resuming reads the keywords from the saved session, so you give it none, and it does not search
+again for anything already searched: the page comes back as you left it. Options that affect the
+output (`--size`, `--mode`, `--format`, `-o`) are taken from the new command, so you can change
+your mind about them.
+
+Starting a new run while an unfinished session is saved is refused, so that a long afternoon of
+picking is not thrown away by accident. Pass `--restart` when you mean to start over. A session
+whose zip has been written is finished with, and the next run replaces it without asking.
+
+A session file holds Pixabay's image addresses, which are meant for short-term display. Resuming
+one that is more than a day old works, and warns you that a thumbnail or a download may no longer
+load. The file never contains your API key.
 
 ### What you get
 

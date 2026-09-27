@@ -82,7 +82,7 @@ import threading
 import time
 from collections import deque
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode
@@ -156,6 +156,30 @@ class Candidate:
     # Only present for accounts Pixabay has approved for full API access.
     image_url: str | None = None
     vector_url: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        data = asdict(self)
+        data["tags"] = list(self.tags)
+        return data
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> Candidate:
+        """Inverse of `to_dict`; raises KeyError/TypeError/ValueError on a malformed one."""
+        return cls(
+            id=int(data["id"]),
+            page_url=str(data["page_url"]),
+            user=str(data["user"]),
+            tags=tuple(str(t) for t in data["tags"]),
+            kind=str(data["kind"]),
+            preview_url=str(data["preview_url"]),
+            webformat_url=str(data["webformat_url"]),
+            large_image_url=str(data["large_image_url"]),
+            width=int(data.get("width", 0)),
+            height=int(data.get("height", 0)),
+            user_id=int(data.get("user_id", 0)),
+            image_url=data.get("image_url") or None,
+            vector_url=data.get("vector_url") or None,
+        )
 
 
 @dataclass(frozen=True)

@@ -55,8 +55,9 @@ from .packager import Entry, PackageError, write_zip
 from .pixabay_client import PixabayClient, SearchCache, Throttle
 from .resizer import extension, render
 from .search_runner import Outcome, SearchRunner, Status
-from .selection import SelectionSession
+from .selection import SelectionError, SelectionSession
 from .selector_ui import serve
+from .session_store import SESSION_NAME, SavedSession, SessionError, SessionStore
 
 EXIT_OK, EXIT_ERROR, EXIT_PARTIAL, EXIT_INTERRUPTED = 0, 1, 3, 130
 
@@ -68,7 +69,8 @@ class Deps:
     http: Any
     serve_fn: Callable[..., None]
     sleep: Callable[[float], None]
-    clock: Callable[[], float]
+    clock: Callable[[], float]  # monotonic, for the rate limiter
+    wall: Callable[[], float]  # wall time, for cache and session ages
 
 
 def _size(text: str) -> tuple[int, int]:
@@ -149,6 +151,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--full-size", action="store_true",
         help="download imageURL instead of largeImageURL (needs Pixabay full API access; "
         "others get the large one)",
+    )  # fmt: skip
+    resume = run.add_argument_group("sessions")
+    resume.add_argument(
+        "--resume", action="store_true",
+        help="continue the saved session in the work directory: no keyword file, and no new "
+        "searches for what was already searched",
+    )  # fmt: skip
+    resume.add_argument(
+        "--restart", action="store_true",
+        help="throw away an unfinished saved session and start a new run",
     )  # fmt: skip
     out.add_argument("-o", "--output", type=Path, metavar="ZIP", help="default winnower.zip")
     out.add_argument("--overwrite", action="store_true", help="replace the zip if it exists")
@@ -232,6 +244,7 @@ def main(
     serve_fn: Callable[..., None] = serve,
     sleep: Callable[[float], None] = time.sleep,
     clock: Callable[[], float] = time.monotonic,
+    wall: Callable[[], float] = time.time,
 ) -> int:
     """Run the command line and return the exit code. The keyword arguments are for tests."""
     out, err = out or sys.stdout, err or sys.stderr
@@ -251,9 +264,10 @@ def main(
                 serve_fn,
                 sleep,
                 clock,
+                wall,
             ),
         )
-    except (ConfigError, KeywordError, PackageError) as problem:
+    except (ConfigError, KeywordError, PackageError, SessionError, SelectionError) as problem:
         warn(f"winnower: error: {problem}")
         return EXIT_ERROR
     except KeyboardInterrupt:
@@ -262,45 +276,126 @@ def main(
         return EXIT_INTERRUPTED
 
 
+STALE_AFTER = 24 * 60 * 60  # Pixabay's image addresses are for short-term display
+
+
+def _check_session(args, store: SessionStore, warn, wall) -> SavedSession | None:
+    """Decide, before any request is spent, whether this run may go ahead.
+
+    Returns the saved session to resume, or None for a fresh run.
+    """
+    if args.resume and args.restart:
+        raise SessionError("--resume and --restart contradict each other; use one.")
+    try:
+        saved = store.load()
+    except SessionError:
+        # An unreadable file is exactly what --restart is for: the error message tells the
+        # person to use it, so it has to be allowed to get past the file it names.
+        if not args.restart:
+            raise
+        store.discard()
+        saved = None
+    where = store.path.parent
+    if args.resume:
+        if args.keywords or args.keyword:
+            raise KeywordError("--resume reads the keywords from the saved session; give none.")
+        if saved is None:
+            raise SessionError(f"There is no saved session in {where} to resume.")
+        if saved.completed:
+            raise SessionError(
+                f"The saved session in {where} is already complete (its zip was written). "
+                "Start a new run from a keyword list."
+            )
+        if wall() - saved.saved_at > STALE_AFTER:
+            warn(
+                "That session is over a day old. Pixabay's image addresses are meant for "
+                "short-term use, so some thumbnails or downloads may no longer load; a keyword "
+                "can be searched again from the page."
+            )
+        return saved
+    if saved is not None and not saved.completed:
+        if not args.restart:
+            raise SessionError(
+                f"An unfinished session is saved in {where} ({saved.describe(wall())}). "
+                "Continue it with --resume, or throw it away and start over with --restart."
+            )
+        store.discard()
+    return None
+
+
 def _run(args, env, dotenv, stdin, say, warn, deps: Deps) -> int:
     settings = _settings_from(args, env, dotenv)
-    keywords = _keywords_from(args, stdin)
+    store = SessionStore(settings.work_dir / SESSION_NAME, now=deps.wall)
+    saved = _check_session(args, store, warn, deps.wall)
+    keywords = None if saved else _keywords_from(args, stdin)
     if settings.output.exists() and not args.overwrite:
         raise PackageError(
             f"{settings.output} already exists. Choose another name with -o, or pass --overwrite."
         )
-    if keywords.duplicates:
-        shown = ", ".join(keywords.duplicates[:5]) + (
-            ", ..." if len(keywords.duplicates) > 5 else ""
+    try:
+        return _pipeline(args, settings, store, saved, keywords, say, warn, deps)
+    except KeyboardInterrupt:
+        hint = (
+            "Your picks are saved: continue with `winnower run --resume`."
+            if saved is not None or store.writes  # not just any file left by an earlier run
+            else "Nothing had been saved yet."
         )
-        warn(f"Ignored {len(keywords.duplicates)} repeated keyword(s), keeping the first: {shown}")
+        warn(
+            f"\nwinnower: interrupted. {hint} Searches stay cached for 24 hours and "
+            "downloaded images stay in the work directory."
+        )
+        return EXIT_INTERRUPTED
 
-    # 1. Search
+
+def _pipeline(args, settings, store, saved, keywords, say, warn, deps: Deps) -> int:
     client = PixabayClient(
         settings.api_key,
         session=deps.http,
         throttle=Throttle(clock=deps.clock, sleep=deps.sleep),
-        cache=SearchCache(settings.work_dir / "cache" / "search"),
+        cache=SearchCache(settings.work_dir / "cache" / "search", now=deps.wall),
         sleep=deps.sleep,
     )
     runner = SearchRunner(client, settings)
-    total = len(keywords)
-    say(f"Searching {total} keyword{'s' if total != 1 else ''} on Pixabay...")
-    report = runner.run(
-        keywords, lambda done, n, outcome: say(f"  {done} / {n}  {outcome.keyword.label}")
-    )
-    say(_summary(report.outcomes))
-    if report.stopped:
-        warn(report.stopped)
+    retry = lambda keyword, query, page: runner.search_one(keyword, term=query, page=page)  # noqa: E731
+
+    if saved:
+        try:
+            session = SelectionSession.from_state(saved.state, retry, multiple=args.multiple)
+        except SelectionError as problem:
+            raise SessionError(
+                f"The saved session in {store.path.parent} cannot be used: {problem} "
+                "Start over with --restart."
+            ) from None
+        say(f"Resuming the saved session: {saved.describe(deps.wall())}.")
+    else:
+        if keywords.duplicates:
+            shown = ", ".join(keywords.duplicates[:5]) + (
+                ", ..." if len(keywords.duplicates) > 5 else ""
+            )
+            warn(
+                f"Ignored {len(keywords.duplicates)} repeated keyword(s), "
+                f"keeping the first: {shown}"
+            )
+        # 1. Search
+        total = len(keywords)
+        say(f"Searching {total} keyword{'s' if total != 1 else ''} on Pixabay...")
+        report = runner.run(
+            keywords, lambda done, n, outcome: say(f"  {done} / {n}  {outcome.keyword.label}")
+        )
+        say(_summary(report.outcomes))
+        if report.stopped:
+            warn(report.stopped)
+        session = SelectionSession(
+            list(report.outcomes), retry, multiple=args.multiple, stopped=report.stopped
+        )
+        store.save(session.export())
+    session.on_change = store.save
 
     # 2. Pick
-    session = SelectionSession(
-        list(report.outcomes),
-        lambda keyword, query, page: runner.search_one(keyword, term=query, page=page),
-        multiple=args.multiple,
-        stopped=report.stopped,
-    )
-    deps.serve_fn(session, open_browser=not args.no_browser, announce=say)
+    if session.finished:
+        say("That session was already finished; going straight to the download.")
+    else:
+        deps.serve_fn(session, open_browser=not args.no_browser, announce=say)
     selections = session.selections()
     if not selections:
         raise PackageError("Nothing was picked, so there is nothing to package.")
@@ -349,6 +444,9 @@ def _run(args, env, dotenv, stdin, say, warn, deps: Deps) -> int:
         warn(f"{len(missing)} picked image(s) are NOT in the zip:")
         for line in missing:
             warn(f"  {line}")
+    store.complete()
+    if store.error:
+        warn(f"Could not save the session file ({store.error}); this run was not affected.")
     kept = len({e.label for e in entries})
     say(f"Wrote {path} with {len(entries)} image{'s' if len(entries) != 1 else ''} "
         f"for {kept} keyword{'s' if kept != 1 else ''}, plus CREDITS.txt.")  # fmt: skip

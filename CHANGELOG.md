@@ -73,7 +73,29 @@ Open work is tracked in [TODO.md](TODO.md), and registered by ID in
   a missing keyword file or API key, an existing output file, or no image being
   produced; 3 when the zip was written but some picked images are missing from
   it, which are listed above the result; 130 when interrupted with Ctrl-C.
-  Searches and downloads stay cached after an interruption.
+  Searches and downloads stay cached after an interruption, and your picks are
+  saved too (see the session entries below).
+- Your searches and picks are saved to `session.json` in the work directory
+  after every click, so a long run can be put down and picked up later. `winnower
+  run --resume` continues it: it needs no keyword file, does not search again
+  for anything already searched, and brings the page back as you left it. The
+  options that shape the output (`--size`, `--mode`, `--format`, `-o`) are taken
+  from the new command, so you can change your mind about them. The file holds
+  Pixabay's image addresses and the keywords, and never the API key.
+- Starting a new run while an unfinished session is saved is refused, so a long
+  afternoon of picking is not thrown away by accident. This is checked before
+  any request is spent. Pass `--restart` to discard it and start over. A session
+  whose zip has been written is finished with, and no longer blocks the next
+  run.
+- Resuming a session more than a day old still works, but warns that Pixabay's
+  image addresses are meant for short-term use, so some thumbnails or downloads
+  may no longer load; a keyword can be searched again from the page. A session
+  file that cannot be read is reported with `--restart` as the way out, and
+  `--resume` is refused, with a reason, when there is nothing saved or the
+  saved session is already complete.
+- If the session file cannot be saved (a full disk, a read-only folder), this is
+  reported once at the end and the run carries on, since the picks are still
+  held in memory.
 
 ### Changed
 
@@ -81,3 +103,6 @@ Open work is tracked in [TODO.md](TODO.md), and registered by ID in
   3 and 200, and defaults to 5, not the 1 to 10 of the original idea. Pixabay
   refuses fewer than 3 results per page, and showing fewer than were fetched
   would make "more results" skip some.
+- Pressing Ctrl-C during `winnower run` now says that your picks are saved and
+  that `winnower run --resume` continues them, instead of only mentioning the
+  cache.
