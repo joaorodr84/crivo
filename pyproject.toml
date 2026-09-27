@@ -17,6 +17,12 @@ dependencies = [
     "Pillow>=10.3",
 ]
 
+[project.urls]
+Homepage = "https://github.com/joaorodr84/crivo"
+Repository = "https://github.com/joaorodr84/crivo"
+Issues = "https://github.com/joaorodr84/crivo/issues"
+Changelog = "https://github.com/joaorodr84/crivo/blob/main/CHANGELOG.md"
+
 [project.scripts]
 crivo = "crivo.cli:cli"
 

@@ -104,6 +104,15 @@ Open work is tracked in [TODO.md](TODO.md), and registered by ID in
   the reason next to the box, and you can try again. If you close the terminal
   mid-search, `winnower run --resume` brings back everything found so far, with
   the keywords not yet reached marked as not searched.
+- Crivo can now be installed with `pipx install crivo` (or `pip install
+  --user crivo`), instead of only from a git clone with a hand-built virtual
+  environment — the previous route only made sense for a developer. Pushing a
+  release tag (`python -m scripts.release --write`, then `git push --tags`)
+  now builds the package and publishes it to PyPI through PyPI's trusted
+  publishing, so no API token is stored in the repository; creating the tag
+  still never pushes it, so that remains the one deliberate step, now the one
+  that also ships the release. Crivo's PyPI page also links back to this
+  repository, its issue tracker and this changelog.
 
 ### Changed
 

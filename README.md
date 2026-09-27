@@ -45,14 +45,15 @@ writes the key into its cache, its output or an error message.
 Python 3.10 or newer, on Windows, macOS or Linux.
 
 ```console
-$ git clone https://github.com/joaorodr84/crivo.git
-$ cd crivo
-$ python -m venv .venv
-$ .venv/bin/pip install .               # Windows: .venv\Scripts\pip install .
+$ pipx install crivo
 ```
 
-That installs a `crivo` command. (`python -m crivo` does the same thing.) If you
-activate the virtual environment first, you can drop the `.venv/bin/` prefix.
+`pipx` puts Crivo in its own isolated environment and the `crivo` command on your `PATH`,
+without a virtual environment to create or activate by hand. No pipx? `pip install --user
+crivo` works too, just without the isolation from your other Python packages.
+
+To build from a checkout instead — to try an unreleased change — see
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Use
 

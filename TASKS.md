@@ -9,7 +9,7 @@ switched over with it: existing `WINNOWER-<n>` IDs (1–21, plus the still-open 
 uses `CRIVO-<n>`. `WINNOWER-22`, the number that would have been next, is retired
 unused rather than reassigned.
 
-**Next ID to assign: `CRIVO-2`** (`WINNOWER-<n>` is frozen at 21 — the highest ever
+**Next ID to assign: `CRIVO-3`** (`WINNOWER-<n>` is frozen at 21 — the highest ever
 used — and assigns no more numbers.)
 
 If this file and history ever disagree, history wins:
@@ -62,6 +62,7 @@ registry, not a second copy of the backlog.
 
 | ID | Date | Status | Title | Commit |
 | --- | --- | --- | --- | --- |
+| CRIVO-2 | 2026-09-27 | done | Publish to PyPI on tag push, so `pipx install crivo` works | — |
 | CRIVO-1 | 2026-09-27 | done | Rename the project from Winnower to Crivo | — |
 | WINNOWER-20 | 2026-09-27 | done | Tidy the tags under each thumbnail: show each once, cap the list | — |
 | WINNOWER-1 | 2026-09-26 | done | Set up the repo workflow: CLAUDE.md, agents, ledger, changelog | — |

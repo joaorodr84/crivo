@@ -1,10 +1,10 @@
 """Proposes -- and with --write, creates -- the next release tag.
 
-Releases here are git tags and nothing else: no package is published, and
-`git describe --contains <sha>` is how "which release has this" gets answered
-(CLAUDE.md -> Versions). The package's own version is derived from the tag by
-setuptools-scm, so there is no version field anywhere to keep in step. What was
-missing was the number itself, which every commit already carries the type for.
+Releases here are git tags first: `git describe --contains <sha>` is how "which release
+has this" gets answered (CLAUDE.md -> Versions), and the package's own version is derived
+from the tag by setuptools-scm, so there is no version field anywhere to keep in step.
+Pushing the tag also publishes the package to PyPI (`.github/workflows/publish.yml`), so
+what was missing was the number itself, which every commit already carries the type for.
 This reads those types and does the arithmetic.
 
 Deliberately half a tool: the bump and the tag are automated, the changelog prose

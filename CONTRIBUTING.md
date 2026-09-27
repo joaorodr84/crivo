@@ -104,5 +104,9 @@ $ python -m scripts.release             # dry run: prints the plan
 $ python -m scripts.release --write     # creates the annotated tag (never pushes it)
 ```
 
+Pushing the tag is what ships it: `.github/workflows/publish.yml` builds the sdist and
+wheel and publishes them to PyPI. That stays a separate, deliberate step from creating the
+tag, same reasoning as before — now it publishes a package, not just a version.
+
 `CHANGELOG.md` is written for people who should not need the repository open, so it describes
 what changed in the tool's behaviour, not commit subjects.
