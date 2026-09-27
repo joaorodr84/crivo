@@ -106,3 +106,11 @@ Open work is tracked in [TODO.md](TODO.md), and registered by ID in
 - Pressing Ctrl-C during `winnower run` now says that your picks are saved and
   that `winnower run --resume` continues them, instead of only mentioning the
   cache.
+
+### Fixed
+
+- Cropping (`--mode crop`, the default) no longer fails on some real photographs
+  with "box offset can't be negative". A rounding error far too small to see, in
+  working out which part of the picture to keep, made two of the three
+  photographs in the first run against Pixabay fail to resize, so their picks
+  were left out of the zip.

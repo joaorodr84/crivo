@@ -66,12 +66,25 @@ def _contained(source: tuple[int, int], box: tuple[int, int]) -> tuple[int, int]
 
 
 def _cover_region(source: tuple[int, int], box: tuple[int, int]) -> tuple[float, ...]:
-    """The centred part of `source` that has `box`'s shape, in source pixels."""
+    """The centred part of `source` that has `box`'s shape, in source pixels.
+
+    The axis that is kept whole is taken as exactly the source's size, not derived through a
+    scale factor. The first version computed `(source - box / scale) / 2` for both axes, and
+    for a real 1280x853 photograph cropped to a square the top came out as -5.7e-14: two
+    nearly equal floats subtracted, and Pillow refuses a negative box offset. 2 of the 3
+    real images in the first live run failed that way, while every round-numbered test
+    passed. Comparing by cross-multiplication keeps the choice of axis in exact integers.
+    """
     sw, sh = source
-    scale = max(box[0] / sw, box[1] / sh)
-    width, height = box[0] / scale, box[1] / scale
+    bw, bh = box
+    if sw * bh > sh * bw:  # the source is wider than the box: keep the full height
+        width, height = sh * bw / bh, float(sh)
+    else:  # taller, or the same shape: keep the full width
+        width, height = float(sw), sw * bh / bw
     left, top = (sw - width) / 2, (sh - height) / 2
-    return left, top, left + width, top + height
+    # Belt and braces: whatever rounding remains must not put the box outside the image.
+    left, top = max(0.0, left), max(0.0, top)
+    return left, top, min(float(sw), left + width), min(float(sh), top + height)
 
 
 def resize_image(

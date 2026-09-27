@@ -3,7 +3,7 @@
 Every task carries an ID of the form `WINNOWER-<n>`. IDs are assigned once, never
 reused, and never renumbered.
 
-**Next ID to assign: `WINNOWER-19`**
+**Next ID to assign: `WINNOWER-20`**
 
 If this file and history ever disagree, history wins:
 
@@ -71,3 +71,4 @@ registry, not a second copy of the backlog.
 | WINNOWER-12 | 2026-09-27 | done | CLI that runs the whole pipeline end to end | — |
 | WINNOWER-14 | 2026-09-27 | done | README, CONTRIBUTING and a sample keyword list | — |
 | WINNOWER-13 | 2026-09-27 | done | Resumable sessions (FR8) | — |
+| WINNOWER-19 | 2026-09-27 | done | Fix crop failing on real photos: float rounding made the source box offset negative | — |

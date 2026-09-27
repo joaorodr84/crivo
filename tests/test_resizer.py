@@ -7,6 +7,7 @@ from PIL import Image
 
 from winnower.resizer import (
     _contained,
+    _cover_region,
     encode,
     extension,
     parse_color,
@@ -53,6 +54,38 @@ class TestCrop:
             512,
             512,
         )
+
+
+class TestCropOnRealisticSizes:
+    """The first live run failed on these: 'box offset can't be negative'."""
+
+    # Sizes Pixabay serves (largeImageURL is 1280 px on the long side) and common targets.
+    SOURCES = [(1280, 853), (1280, 992), (1280, 960), (1280, 720), (853, 1280), (1920, 1280),
+               (4000, 3000), (3000, 4000), (1000, 667), (640, 427), (1280, 1280)]  # fmt: skip
+    TARGETS = [(256, 256), (512, 512), (640, 480), (300, 200), (100, 37), (1, 1), (33, 1000)]
+
+    @pytest.mark.parametrize("source", SOURCES)
+    def test_every_common_source_crops_to_every_common_target(self, source):
+        image = Image.new("RGB", source, "red")
+        for target in self.TARGETS:
+            assert resize_image(image, target, "crop").size == target, (source, target)
+
+    def test_the_regions_stay_inside_the_image_for_a_wide_sweep_of_shapes(self):
+        for sw in range(1, 60, 7):
+            for sh in range(1, 60, 5):
+                for bw in (1, 3, 16, 100, 511):
+                    for bh in (1, 7, 16, 100, 513):
+                        left, top, right, bottom = _cover_region((sw, sh), (bw, bh))
+                        assert 0 <= left < right <= sw and 0 <= top < bottom <= sh
+                        assert (right - left) * bh == pytest.approx((bottom - top) * bw)
+
+    def test_the_kept_axis_is_exactly_whole(self):
+        left, top, right, bottom = _cover_region((1280, 853), (256, 256))
+        assert (top, bottom) == (0.0, 853.0)  # not -5.7e-14 and 853.0000000000001
+
+    def test_the_centre_is_still_the_centre(self):
+        left, _, right, _ = _cover_region((300, 100), (100, 100))
+        assert (left, right) == (100.0, 200.0)
 
 
 class TestPad:
