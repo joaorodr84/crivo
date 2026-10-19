@@ -1,13 +1,14 @@
 # Runs the checks that previously only ran when someone remembered to ask.
 #
-# Work lands on main by fast-forward rather than through pull requests, so `push` is
-# the trigger that actually fires. `pull_request` is kept so the workflow still works
-# if that ever changes.
+# Work lands on develop by fast-forward rather than through pull requests, so `push` is
+# the trigger that actually fires. `main` only moves for a release or a hotfix (CLAUDE.md
+# -> Releases, Hotfixes), but still gets the same checks when it does. `pull_request` is
+# kept so the workflow still works if that ever changes.
 name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [develop, main]
   pull_request:
 
 # A newer push to the same ref makes the older run pointless.

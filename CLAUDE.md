@@ -10,19 +10,60 @@ lives in [TODO.md](TODO.md) and is registered by ID in [TASKS.md](TASKS.md).
 ## Branch before you work
 
 Create the branch before the first edit, not after. When a request will change files here
-(code, tests, `TODO.md`, docs), the first action is `git checkout -b <name>` off `main`,
-so no work lands in the working tree while `HEAD` is on `main`.
+(code, tests, `TODO.md`, docs), the first action is `git checkout -b <name>` off `develop`,
+so no work lands in the working tree while `HEAD` is on `develop`.
 
 - `<name>` is a plain `kebab-case-summary` of the change, prefixed with the task ID:
   `crivo-12-show-candidate-tags`. Never use a `p1-`/`p2-` priority prefix.
-- Already on a non-`main` branch: stay on it, don't branch off a branch.
+- Already on a branch other than `develop` or `main`: stay on it, don't branch off a branch.
 - Skip branching for read-only work: answering questions, reading code, running tests,
   investigating a bug without fixing it. Branch the moment an investigation becomes a fix.
 - Don't ask permission — it's cheap and reversible, and this rule *is* the standing authorization.
 
-The `commit` agent picks up from a feature branch: commit → push → land on `main` → cleanup.
-See [.claude/agents/commit.md](.claude/agents/commit.md). Until the repo has an `origin` remote it
-skips the push steps and lands locally.
+`develop` and `main` are the two long-lived branches. `develop` is where everything in progress
+lands; `main` only moves on a release (see **Releases** below) or a hotfix (see **Hotfixes**
+below). The `commit` agent picks up from a feature branch: commit → push → land on `develop` →
+cleanup. See [.claude/agents/commit.md](.claude/agents/commit.md). Until the repo has an `origin`
+remote it skips the push steps and lands locally.
+
+## Releases
+
+`main` tracks what's actually shipped; it changes only when a version is being cut, never as a
+side effect of closing an ordinary task.
+
+1. Fast-forward `main` to `develop`:
+   ```sh
+   git checkout main && git pull --ff-only origin main && git merge --ff-only develop
+   ```
+   If `main` can't fast-forward, stop and ask — don't force or rebase `main` to make it fit.
+2. Push it: `git push origin main`.
+3. From `main`, run the release script (see **Versions** below for what it does and how the
+   number is derived): `python -m scripts.release --write`, then push the tag it prints —
+   pushing the tag is the deliberate, separate step that triggers `publish.yml` and actually
+   ships to PyPI.
+4. `develop` keeps going unchanged; it's never reset or rebased onto `main`.
+
+This is a deliberate, owner-requested action ("release", "ship", "cut version X") — unlike the
+rest of this file, it is not standing authorization to merge to `main` on your own judgment.
+
+## Hotfixes
+
+A hotfix is an urgent fix to code that's already released — the one case where work branches off
+`main` instead of `develop`, because waiting for everything else on `develop` to also ship isn't
+acceptable.
+
+- Branch name starts with `hotfix-`, not just the task ID, so it's unmistakable at a glance:
+  `hotfix-18-crash-on-empty-zip`.
+- Cut from `main`, fixed as an ordinary `fix:` commit (see **Commit messages**), then landed on
+  **both** `main` (same steps as **Releases** above — fast-forward, push, run
+  `python -m scripts.release --write`, push the tag) and `develop` (so the fix survives the next
+  regular release) — never just one side. Because the release number is derived from commit
+  types rather than a version field kept somewhere, the `fix:` type alone is what bumps the
+  patch version; there is nothing else to edit by hand.
+- A conflict landing the same fix on `develop` is a real signal the same code changed on both
+  branches since they diverged, and needs a person to resolve it, not a guess.
+- Reserved for genuinely urgent fixes. Anything that can wait for the normal cycle goes through
+  `develop` like everything else in **Branch before you work** above.
 
 ## Task completion workflow
 

@@ -9,7 +9,7 @@ switched over with it: existing `WINNOWER-<n>` IDs (1–21, plus the still-open 
 uses `CRIVO-<n>`. `WINNOWER-22`, the number that would have been next, is retired
 unused rather than reassigned.
 
-**Next ID to assign: `CRIVO-4`** (`WINNOWER-<n>` is frozen at 21 — the highest ever
+**Next ID to assign: `CRIVO-5`** (`WINNOWER-<n>` is frozen at 21 — the highest ever
 used — and assigns no more numbers.)
 
 If this file and history ever disagree, history wins:
@@ -61,6 +61,7 @@ registry, not a second copy of the backlog.
 
 | ID | Date | Status | Title | Commit |
 | --- | --- | --- | --- | --- |
+| CRIVO-4 | 2026-10-19 | done | Switch to a develop/main branching model with a hotfix path, mirroring DigiSpin's DIGISPIN-187/188 and Sphinx's SPHINX-183: created `develop` off `main` and pushed it, switched GitHub's default branch to match, repointed `CLAUDE.md`'s "Branch before you work" section and the `commit` agent's land-and-push step from `main` to `develop`, and added "Releases" (fast-forward `main` from `develop`, then run the existing `scripts.release --write`) and "Hotfixes" (`hotfix-<name>` off `main`, landed on both `main` and `develop`) sections to both files. Also added `develop` to `ci.yml`'s push trigger. No static version field to bump on a hotfix here — the release script already derives the bump from commit types | — |
 | CRIVO-3 | 2026-10-19 | done | Name the default zip after the keyword file and the run's date/time | — |
 | CRIVO-2 | 2026-09-27 | done | Publish to PyPI on tag push, so `pipx install crivo` works | — |
 | WINNOWER-16 | 2026-09-27 | done | Screenshots of the selection UI for the README | — |
