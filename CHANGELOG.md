@@ -12,6 +12,18 @@ is cut by retitling the `## [Unreleased]` section, not by generating this file.
 Open work is tracked in [TODO.md](TODO.md), and registered by ID in
 [TASKS.md](TASKS.md).
 
+## [0.2.0] - 2026-10-19
+
+### Changed
+
+- The default zip name, when `-o`/`--output` is omitted, is now derived from
+  the keyword file and the run's time —
+  `<keyword-file-stem-in-kebab-case>_<yyyy-mm-dd>_<hh-mm>.zip`, or
+  `crivo_<yyyy-mm-dd>_<hh-mm>.zip` when there's no keyword file to name it
+  after (`-k`, standard input, the browser box, or `--resume`) — instead of
+  always `crivo.zip`, which a second run against a different keyword file
+  would silently overwrite. An explicit `-o` still always wins.
+
 ## [0.1.0] - 2026-09-27
 
 ### Added
