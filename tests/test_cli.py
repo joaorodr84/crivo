@@ -3,6 +3,7 @@
 import io
 import json
 import threading
+import time
 import zipfile
 
 import pytest
@@ -80,11 +81,13 @@ class Run:
         path.write_text(text, encoding="utf-8")
         return str(path)
 
-    def __call__(self, *argv, network=None, serve_fn=None, env=None, stdin=None):
+    def __call__(
+        self, *argv, network=None, serve_fn=None, env=None, stdin=None, default_output=False
+    ):
         self.out, self.err = io.StringIO(), io.StringIO()  # this run's output only
         self.network = network or Network()
         args = ["run", *argv]
-        if "-o" not in args:
+        if not default_output and "-o" not in args:
             args += ["-o", str(self.zip)]
         args += ["--work-dir", str(self.tmp / "work"), "--no-browser"]
         self.code = main(
@@ -163,6 +166,35 @@ class TestHappyPath:
         run(run.keywords("apple\n"), "--format", "jpeg", serve_fn=picker("apple"))
         assert run.names()[0] == "apple.jpg"
         assert Image.open(io.BytesIO(run.read("apple.jpg"))).format == "JPEG"
+
+
+class TestDefaultOutputName:
+    """CRIVO-3: no `-o` names the zip after the keyword file and the moment it was written.
+
+    `default_output` itself (kebab-casing, the fallback name) has its own unit tests in
+    `test_config.py`; this is only the wiring: the CLI feeds it the right keyword source
+    and clock, and an explicit `-o` still overrides it.
+    """
+
+    STAMP = time.mktime((2026, 10, 19, 14, 30, 0, 0, 0, -1))
+
+    def test_named_after_the_keyword_file_and_the_run_clock(self, run, monkeypatch):
+        monkeypatch.chdir(run.tmp)
+        run.clock.now = self.STAMP
+        path = run.keywords("apple\npear\n", name="my_keywords.txt")
+        assert run(path, default_output=True) == EXIT_OK
+        assert (run.tmp / "my-keywords_2026-10-19_14-30.zip").exists()
+
+    def test_falls_back_to_crivo_with_no_keyword_file_to_name_it_after(self, run, monkeypatch):
+        monkeypatch.chdir(run.tmp)
+        run.clock.now = self.STAMP
+        assert run("-k", "apple", default_output=True) == EXIT_OK
+        assert (run.tmp / "crivo_2026-10-19_14-30.zip").exists()
+
+    def test_an_explicit_output_still_wins(self, run, monkeypatch):
+        monkeypatch.chdir(run.tmp)
+        assert run(run.keywords("apple\n"), "-o", "explicit.zip") == EXIT_OK
+        assert (run.tmp / "explicit.zip").exists()
 
 
 class TestOptionsReachTheQuery:

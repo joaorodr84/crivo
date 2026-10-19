@@ -16,7 +16,7 @@ Searching 12 keywords on Pixabay...
 12 with results
 Pick your images at http://127.0.0.1:52431/?t=...
 Downloading 11 images...
-Wrote crivo.zip with 11 images for 11 keywords, plus CREDITS.txt.
+Wrote keywords_sample_2026-10-19_14-30.zip with 11 images for 11 keywords, plus CREDITS.txt.
 ```
 
 ## You need your own Pixabay API key
@@ -120,7 +120,7 @@ names, so a label repeated in a different case is dropped and reported.
 | `--term-template '{term} icon'` | Wrap every search term, for example to find icons or flat illustrations. |
 | `--image-type`, `--orientation`, `--category`, `--colors`, `--min-width`, `--min-height`, `--safesearch`, `--editors-choice`, `--order`, `--lang` | Pixabay's own search filters. |
 | `--multiple` | Allow more than one image per keyword (`apple.png`, `apple-2.png`, ...). |
-| `-o`, `--output ZIP` | Where to write the zip (default `crivo.zip`). It is not replaced unless you pass `--overwrite`. |
+| `-o`, `--output ZIP` | Where to write the zip (default `<keyword file>_<date>_<time>.zip`, e.g. `keywords_sample_2026-10-19_14-30.zip`; `crivo_...zip` when there is no keyword file to name it after). It is not replaced unless you pass `--overwrite`. |
 | `--work-dir DIR` | Search cache, downloaded originals and the saved session (default `.crivo`). |
 | `--resume` / `--restart` | Continue the saved session, or throw an unfinished one away and start over. |
 | `--no-browser` | Print the address instead of opening it. |

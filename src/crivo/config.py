@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import os
 import re
+import time
 from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -144,6 +145,25 @@ def parse_size(text: str) -> tuple[int, int]:
         raise ConfigError(f"size must look like 512x512 or 512; got {text!r}")
     width = int(match[1])
     return width, int(match[2] or width)
+
+
+_NOT_KEBAB = re.compile(r"[^0-9A-Za-z]+")
+
+
+def kebab_case(text: str) -> str:
+    return _NOT_KEBAB.sub("-", text).strip("-").lower()
+
+
+def default_output(keywords: str | None, now: float) -> Path:
+    """`<keyword file>_<date>_<time>.zip`, or `crivo_...` when there is no file to name it after.
+
+    Nothing names it when keywords come from `-k`, stdin (`-`), the browser box, or a
+    `--resume`: there is nothing to slug, so the run falls back to the tool's own name
+    rather than leaving the stem empty.
+    """
+    stamp = time.strftime("%Y-%m-%d_%H-%M", time.localtime(now))
+    stem = kebab_case(Path(keywords).stem) if keywords and keywords != "-" else ""
+    return Path(f"{stem or 'crivo'}_{stamp}.zip")
 
 
 def parse_dotenv(text: str) -> dict[str, str]:

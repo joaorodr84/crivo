@@ -47,6 +47,7 @@ from .config import (
     ConfigError,
     SearchOptions,
     Settings,
+    default_output,
     load_settings,
     parse_size,
 )
@@ -164,7 +165,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--restart", action="store_true",
         help="throw away an unfinished saved session and start a new run",
     )  # fmt: skip
-    out.add_argument("-o", "--output", type=Path, metavar="ZIP", help="default crivo.zip")
+    out.add_argument(
+        "-o", "--output", type=Path, metavar="ZIP",
+        help="default <keyword file>_<date>_<time>.zip, e.g. my-keywords_2026-10-19_14-30.zip",
+    )  # fmt: skip
     out.add_argument("--overwrite", action="store_true", help="replace the zip if it exists")
     out.add_argument(
         "--work-dir", type=Path, metavar="DIR",
@@ -184,7 +188,9 @@ def run_help() -> str:
     )
 
 
-def _settings_from(args: argparse.Namespace, env: Mapping[str, str], dotenv: Path) -> Settings:
+def _settings_from(
+    args: argparse.Namespace, env: Mapping[str, str], dotenv: Path, wall: Callable[[], float]
+) -> Settings:
     filters: dict[str, Any] = {
         name: getattr(args, name)
         for name in ("image_type", "orientation", "category", "min_width", "min_height",
@@ -206,7 +212,7 @@ def _settings_from(args: argparse.Namespace, env: Mapping[str, str], dotenv: Pat
         "background": args.background,
         "full_size": True if args.full_size else None,
         "work_dir": args.work_dir,
-        "output": args.output,
+        "output": args.output or default_output(args.keywords, wall()),
         "search": SearchOptions(**filters),
     }
     return load_settings(overrides, env=env, dotenv_path=dotenv)
@@ -329,7 +335,7 @@ def _check_session(args, store: SessionStore, warn, wall) -> SavedSession | None
 
 
 def _run(args, env, dotenv, stdin, say, warn, deps: Deps) -> int:
-    settings = _settings_from(args, env, dotenv)
+    settings = _settings_from(args, env, dotenv, deps.wall)
     store = SessionStore(settings.work_dir / SESSION_NAME, now=deps.wall)
     saved = _check_session(args, store, warn, deps.wall)
     keywords = None if saved else _keywords_from(args, stdin)

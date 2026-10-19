@@ -1,3 +1,5 @@
+import time
+
 import pytest
 
 from crivo import __version__
@@ -6,7 +8,9 @@ from crivo.config import (
     ConfigError,
     SearchOptions,
     Settings,
+    default_output,
     find_api_key,
+    kebab_case,
     load_settings,
     parse_dotenv,
     parse_size,
@@ -158,3 +162,37 @@ def test_parse_size(text, expected):
 def test_parse_size_rejects(text):
     with pytest.raises(ConfigError):
         parse_size(text)
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("My Keywords", "my-keywords"),
+        ("My_Keywords-List", "my-keywords-list"),
+        ("  leading and trailing  ", "leading-and-trailing"),
+        ("café_list!!", "caf-list"),
+        ("", ""),
+        ("___", ""),
+    ],
+)
+def test_kebab_case(text, expected):
+    assert kebab_case(text) == expected
+
+
+class TestDefaultOutput:
+    # time.mktime is the inverse of the localtime that default_output reads it back
+    # with, so the expected stamp below holds regardless of the machine's timezone.
+    NOW = time.mktime((2026, 10, 19, 14, 30, 0, 0, 0, -1))
+
+    def test_named_after_the_keyword_file_in_kebab_case(self):
+        path = default_output("some/dir/My Keywords_List.txt", self.NOW)
+        assert path.name == "my-keywords-list_2026-10-19_14-30.zip"
+
+    def test_the_extension_is_dropped_not_kebab_cased(self):
+        path = default_output("keywords.csv", self.NOW)
+        assert path.name == "keywords_2026-10-19_14-30.zip"
+
+    @pytest.mark.parametrize("keywords", [None, "-"])
+    def test_falls_back_to_crivo_with_no_file_to_name_it_after(self, keywords):
+        path = default_output(keywords, self.NOW)
+        assert path.name == "crivo_2026-10-19_14-30.zip"
