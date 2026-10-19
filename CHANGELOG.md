@@ -12,7 +12,7 @@ is cut by retitling the `## [Unreleased]` section, not by generating this file.
 Open work is tracked in [TODO.md](TODO.md), and registered by ID in
 [TASKS.md](TASKS.md).
 
-## 2026-09-27
+## [0.1.0] - 2026-09-27
 
 ### Added
 
